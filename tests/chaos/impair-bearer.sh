@@ -54,14 +54,14 @@ case "${1:-}" in
         BR_MILSAT=$(get_bridge_interface br-milsat)
         BR_LOSRF=$(get_bridge_interface br-losrf)
 
-        echo " -> P-LEO Satellite ($BR_PLEOPS + taps): 40ms +/- 5ms delay, 100Mbps, 0.1% loss"
-        apply_netem_to_bridge_and_taps "$BR_PLEOPS" "delay 40ms 5ms distribution normal loss 0.1% rate 100mbit"
+        echo " -> P-LEO Satellite ($BR_PLEOPS + taps): 25ms +/- 5ms delay, 100Mbps, 0.1% loss"
+        apply_netem_to_bridge_and_taps "$BR_PLEOPS" "delay 25ms 5ms distribution normal loss 0.1% rate 100mbit"
 
-        echo " -> MILSATCOM ($BR_MILSAT + taps): 500ms +/- 50ms delay, 10Mbps, 1.0% loss"
-        apply_netem_to_bridge_and_taps "$BR_MILSAT" "delay 500ms 50ms distribution normal loss 1.0% rate 10mbit"
+        echo " -> MILSATCOM ($BR_MILSAT + taps): 250ms +/- 25ms delay, 10Mbps, 0.5% loss"
+        apply_netem_to_bridge_and_taps "$BR_MILSAT" "delay 250ms 25ms distribution normal loss 0.5% rate 10mbit"
 
-        echo " -> Tactical LOS RF ($BR_LOSRF + taps): 100ms +/- 20ms delay, 2Mbps, 3.0% loss"
-        apply_netem_to_bridge_and_taps "$BR_LOSRF" "delay 100ms 20ms distribution normal loss 3.0% rate 2mbit"
+        echo " -> Tactical LOS RF ($BR_LOSRF + taps): 50ms +/- 10ms delay, 5Mbps, 1.0% loss"
+        apply_netem_to_bridge_and_taps "$BR_LOSRF" "delay 50ms 10ms distribution normal loss 1.0% rate 5mbit"
         echo "==> Profiles applied successfully."
         ;;
 

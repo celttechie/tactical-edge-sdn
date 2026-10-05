@@ -1,0 +1,34 @@
+# This file tells the frr package which daemons to start.
+#
+# Entries are in the format: <daemon>=(yes|no|priority)
+#   0, "yes"  - start daemon
+#   1..9      - start daemon with priority (default: 0)
+#   "no"      - don't start daemon
+#
+zebra=yes
+bgpd=yes
+ospfd=no
+ospf6d=no
+ripd=no
+ripngd=no
+isisd=no
+pimd=no
+ldpd=no
+nhrpd=no
+eigrpd=no
+babeld=no
+sharpd=no
+pbrd=no
+bfdd=yes
+fabricd=no
+vrrpd=no
+pathd=no
+
+# Configuration profile
+#
+# Don't change this unless you know what you're doing.
+#
+vtysh_enable=yes
+zebra_options="  -A 127.0.0.1 -s 90000000"
+bgpd_options="   -A 127.0.0.1"
+bfdd_options="   -A 127.0.0.1"
