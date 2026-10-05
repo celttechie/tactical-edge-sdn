@@ -25,3 +25,9 @@ venv/
 *.qcow2
 *.iso
 *.ppm
+
+# Zarf / Package Build Artifacts
+build/
+*.tar.zst
+*.tar.gz
+

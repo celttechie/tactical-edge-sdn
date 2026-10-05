@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tactical-sdn-stack
+  namespace: tactical-sdn
+  labels:
+    app.kubernetes.io/name: tactical-sdn-stack
+    app.kubernetes.io/component: dataplane-controller
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tactical-sdn-stack
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tactical-sdn-stack
+        app.kubernetes.io/component: dataplane-controller
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: sdn-stack
+          image: ghcr.io/defenseunicorns/tactical-sdn-stack:v0.3.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+                - SYS_ADMIN
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: host-modules
+              mountPath: /lib/modules
+              readOnly: true
+            - name: sdn-config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: host-modules
+          hostPath:
+            path: /lib/modules
+        - name: sdn-config
+          configMap:
+            name: sdn-controller-config
