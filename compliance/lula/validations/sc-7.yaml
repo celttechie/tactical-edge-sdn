@@ -1,0 +1,25 @@
+uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
+name: sc-7-validation
+title: sc-7-validation
+description: Boundary Protection and Network Separation Validation
+domain:
+  type: kubernetes
+  kubernetes-spec:
+    resources:
+      - name: sdn_daemonset
+        resource-rule:
+          group: apps
+          version: v1
+          resource: daemonsets
+          namespaces: [tactical-sdn]
+provider:
+  type: opa
+  opa-spec:
+    rego: |
+      package validate
+
+      validate {
+        ds := input.sdn_daemonset[_]
+        ds.metadata.name == "tactical-sdn-stack"
+        ds.status.numberReady > 0
+      }

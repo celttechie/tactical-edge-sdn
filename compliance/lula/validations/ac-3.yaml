@@ -1,0 +1,25 @@
+uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
+name: ac-3-validation
+title: ac-3-validation
+description: Access Enforcement and Least Privilege Capabilities Validation
+domain:
+  type: kubernetes
+  kubernetes-spec:
+    resources:
+      - name: sdn_daemonset
+        resource-rule:
+          group: apps
+          version: v1
+          resource: daemonsets
+          namespaces: [tactical-sdn]
+provider:
+  type: opa
+  opa-spec:
+    rego: |
+      package validate
+
+      validate {
+        ds := input.sdn_daemonset[0]
+        container := ds.spec.template.spec.containers[0]
+        container.securityContext.capabilities.add[_] == "NET_ADMIN"
+      }
