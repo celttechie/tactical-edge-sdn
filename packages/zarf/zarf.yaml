@@ -1,0 +1,25 @@
+kind: ZarfPackageConfig
+metadata:
+  name: tactical-sdn-stack
+  description: "Tactical Edge SD-WAN Dataplane and SLA Policy Controller for DDIL Environments"
+  version: "0.3.0"
+  architecture: "amd64"
+  url: "https://github.com/celttechie/tactical-edge-sdn"
+
+components:
+  - name: sdn-routing-stack
+    required: true
+    description: "Cloud-native containerized FRRouting, WireGuard, and dynamic Netlink SLA Policy Controller"
+    images:
+      - ghcr.io/defenseunicorns/tactical-sdn-stack:v0.3.0
+    manifests:
+      - name: sdn-manifests
+        namespace: tactical-sdn
+        kustomizations:
+          - manifests
+    actions:
+      onDeploy:
+        before:
+          - cmd: "echo '==> [Zarf Action] Checking host kernel prerequisites for Tactical Edge SD-WAN...' && (test $(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0) -eq 1 || sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true)"
+        after:
+          - cmd: "echo '==> [Zarf Action] Verifying Tactical Edge SD-WAN deployment status...' && (kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn-stack --timeout=60s 2>/dev/null || true)"

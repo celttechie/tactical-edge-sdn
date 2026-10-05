@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sdn-telemetry
+  namespace: tactical-sdn
+  labels:
+    app.kubernetes.io/name: tactical-sdn-stack
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tactical-sdn-stack
+  ports:
+    - name: telemetry
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

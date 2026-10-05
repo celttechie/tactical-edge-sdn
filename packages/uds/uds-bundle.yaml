@@ -1,0 +1,11 @@
+kind: UDSBundle
+metadata:
+  name: tactical-edge-sdn
+  description: "UDS Core Bundle for Tactical Edge SD-WAN Dataplane and SLA Policy Engine"
+  version: "0.3.0"
+  architecture: "amd64"
+
+packages:
+  - name: tactical-sdn-stack
+    repository: "ghcr.io/defenseunicorns/packages/tactical-sdn-stack"
+    ref: "0.3.0"

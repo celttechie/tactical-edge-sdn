@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tactical-sdn
+  labels:
+    app.kubernetes.io/part-of: tactical-edge-sdn
+    pod-security.kubernetes.io/enforce: privileged
