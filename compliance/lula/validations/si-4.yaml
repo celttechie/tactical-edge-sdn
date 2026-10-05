@@ -1,0 +1,25 @@
+uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
+name: si-4-validation
+title: si-4-validation
+description: Information System Monitoring and Telemetry Service Validation
+domain:
+  type: kubernetes
+  kubernetes-spec:
+    resources:
+      - name: sdn_service
+        resource-rule:
+          group: ""
+          version: v1
+          resource: services
+          namespaces: [tactical-sdn]
+provider:
+  type: opa
+  opa-spec:
+    rego: |
+      package validate
+
+      validate {
+        svc := input.sdn_service[0]
+        svc.metadata.name == "sdn-telemetry"
+        svc.spec.ports[0].port == 8080
+      }

@@ -65,6 +65,17 @@ case "${1:-}" in
         echo "==> Profiles applied successfully."
         ;;
 
+    degrade)
+        BEARER="${2:-}"
+        DELAY="${3:-300ms 50ms}"
+        LOSS="${4:-15%}"
+        if [[ -z "$BEARER" ]]; then usage; fi
+        BR_DEV=$(get_bridge_interface "br-$BEARER")
+        echo "==> Degrading bearer $BEARER ($BR_DEV + taps) with delay $DELAY and loss $LOSS..."
+        apply_netem_to_bridge_and_taps "$BR_DEV" "delay $DELAY loss $LOSS"
+        echo "==> Link $BEARER degraded."
+        ;;
+
     cut)
         BEARER="${2:-}"
         if [[ -z "$BEARER" ]]; then usage; fi
