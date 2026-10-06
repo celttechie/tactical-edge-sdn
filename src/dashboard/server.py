@@ -407,6 +407,81 @@ class DashboardDataManager:
         self.cached_state = state
         return state
 
+    def get_prometheus_metrics(self) -> str:
+        """Render current telemetry state in standard Prometheus text exposition format."""
+        state = self.get_current_state()
+        lines = [
+            "# HELP sdn_system_readiness Current tactical SD-WAN system readiness (2=FMC, 1=PMC, 0=NMC)",
+            "# TYPE sdn_system_readiness gauge",
+        ]
+        readiness_val = 2 if state.overall_readiness == "FMC" else (1 if state.overall_readiness == "PMC" else 0)
+        lines.append(f'sdn_system_readiness{{readiness="{state.overall_readiness}"}} {readiness_val}')
+
+        lines.extend([
+            "# HELP sdn_bearer_latency_seconds Measured RTT latency per tactical bearer in seconds",
+            "# TYPE sdn_bearer_latency_seconds gauge",
+        ])
+        for name, b in state.bearers.items():
+            latency_sec = b["latency_ms"] / 1000.0
+            lines.append(f'sdn_bearer_latency_seconds{{bearer="{name}",interface="{b["interface"]}"}} {latency_sec:.4f}')
+
+        lines.extend([
+            "# HELP sdn_bearer_jitter_seconds Measured packet jitter per tactical bearer in seconds",
+            "# TYPE sdn_bearer_jitter_seconds gauge",
+        ])
+        for name, b in state.bearers.items():
+            jitter_sec = b["jitter_ms"] / 1000.0
+            lines.append(f'sdn_bearer_jitter_seconds{{bearer="{name}",interface="{b["interface"]}"}} {jitter_sec:.4f}')
+
+        lines.extend([
+            "# HELP sdn_bearer_loss_ratio Packet loss ratio per tactical bearer (0.0 to 1.0)",
+            "# TYPE sdn_bearer_loss_ratio gauge",
+        ])
+        for name, b in state.bearers.items():
+            loss_ratio = b["packet_loss_pct"] / 100.0
+            lines.append(f'sdn_bearer_loss_ratio{{bearer="{name}",interface="{b["interface"]}"}} {loss_ratio:.4f}')
+
+        lines.extend([
+            "# HELP sdn_bearer_metric Linux kernel route metric computed for the bearer link",
+            "# TYPE sdn_bearer_metric gauge",
+        ])
+        for name, b in state.bearers.items():
+            lines.append(f'sdn_bearer_metric{{bearer="{name}",interface="{b["interface"]}"}} {b["computed_metric"]}')
+
+        lines.extend([
+            "# HELP sdn_bearer_score Computed SLA health score (0-100)",
+            "# TYPE sdn_bearer_score gauge",
+        ])
+        for name, b in state.bearers.items():
+            lines.append(f'sdn_bearer_score{{bearer="{name}",interface="{b["interface"]}"}} {b["score"]:.1f}')
+
+        lines.extend([
+            "# HELP sdn_bearer_active Indicates if the bearer is currently the lowest-metric primary route (1 or 0)",
+            "# TYPE sdn_bearer_active gauge",
+        ])
+        for name, b in state.bearers.items():
+            active_val = 1 if b["is_active_route"] else 0
+            lines.append(f'sdn_bearer_active{{bearer="{name}",interface="{b["interface"]}"}} {active_val}')
+
+        lines.extend([
+            "# HELP sdn_bearer_throughput_bytes_per_second Bandwidth throughput in bytes/sec",
+            "# TYPE sdn_bearer_throughput_bytes_per_second gauge",
+        ])
+        for name, b in state.bearers.items():
+            rx_bytes_sec = (b["rx_kbps"] * 1000.0) / 8.0
+            tx_bytes_sec = (b["tx_kbps"] * 1000.0) / 8.0
+            lines.append(f'sdn_bearer_throughput_bytes_per_second{{bearer="{name}",direction="rx"}} {rx_bytes_sec:.1f}')
+            lines.append(f'sdn_bearer_throughput_bytes_per_second{{bearer="{name}",direction="tx"}} {tx_bytes_sec:.1f}')
+
+        lines.extend([
+            "# HELP sdn_failover_events_total Total number of automated path steering failover events",
+            "# TYPE sdn_failover_events_total counter",
+        ])
+        failover_count = sum(1 for e in state.recent_events if e.get("type") == "ROUTE_FAILOVER")
+        lines.append(f'sdn_failover_events_total {failover_count}')
+
+        return "\n".join(lines) + "\n"
+
 class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
     data_manager: DashboardDataManager = None
 
@@ -461,6 +536,18 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
             data = json.dumps(asdict(state)).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            if not head_only:
+                self.wfile.write(data)
+            return
+
+        elif self.path in ("/metrics", "/metrics/"):
+            metrics_text = self.data_manager.get_prometheus_metrics()
+            data = metrics_text.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
