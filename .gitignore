@@ -30,4 +30,5 @@ venv/
 build/
 *.tar.zst
 *.tar.gz
+*.zip
 
