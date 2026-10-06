@@ -72,6 +72,7 @@ flowchart TD
 
 ```
 ├── docs/
+│   ├── architecture/      # Detailed comparison guides (Legacy vs. Modernized SDN)
 │   ├── adr/               # Architecture Decision Records
 │   └── milestones/        # Implementation milestones and validation criteria
 ├── infra/
