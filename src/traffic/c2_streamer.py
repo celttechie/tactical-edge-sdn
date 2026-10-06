@@ -153,8 +153,15 @@ def run_streamer(rate_hz: int = 40, payload_size_bytes: int = 512, status_port: 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--target", type=str, default=TARGET_HOST, help="Target Shore Gateway IP")
+    parser.add_argument("--port", type=int, default=TARGET_PORT, help="Target UDP port")
+    parser.add_argument("--status-port", type=int, default=STATUS_PORT, help="Status HTTP server port")
     parser.add_argument("--rate", type=int, default=40, help="Packet generation rate in Hz")
     parser.add_argument("--size", type=int, default=512, help="Payload size per packet in bytes")
-    parser.add_argument("--port", type=int, default=STATUS_PORT, help="Status HTTP server port")
     args = parser.parse_args()
-    run_streamer(rate_hz=args.rate, payload_size_bytes=args.size, status_port=args.port)
+    TARGET_HOST = args.target
+    TARGET_PORT = args.port
+    with lock:
+        stats.target_host = TARGET_HOST
+        stats.target_port = TARGET_PORT
+    run_streamer(rate_hz=args.rate, payload_size_bytes=args.size, status_port=args.status_port)

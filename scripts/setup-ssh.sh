@@ -107,6 +107,7 @@ Host ${alias_name} ${ip_addr}
     User ${VM_USER}
     ProxyJump ${proxy_target}
     IdentityFile ${SSH_KEY}
+    UserKnownHostsFile ~/.ssh/known_hosts_tactical_lab
     StrictHostKeyChecking accept-new
     IdentitiesOnly yes
 
