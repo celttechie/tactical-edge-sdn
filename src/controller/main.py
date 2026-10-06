@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
 Tactical Edge SD-WAN Policy Controller Daemon
-Entrypoint for real-time link quality probing and dynamic path steering.
+Entrypoint for real-time link quality probing, dynamic path steering,
+and embedded Operations HUD & Chaos Control server.
 """
 
+import os
 import time
 import signal
 import sys
 import logging
 import argparse
 import json
+import threading
+from http.server import ThreadingHTTPServer, HTTPServer
+
 from .config import ControllerConfig, DEFAULT_CONFIG
 from .sla_prober import MultiBearerTelemetryManager
 from .policy_engine import SDWANPolicyEngine, LinkHealthState
 from .route_actuator import RouteActuator
+from .interface_stats import InterfaceStatsCollector
 
 def setup_logging(verbose: bool = False):
     level = logging.DEBUG if verbose else logging.INFO
@@ -24,8 +30,9 @@ def setup_logging(verbose: bool = False):
     )
 
 class SDWANControllerDaemon:
-    def __init__(self, config: ControllerConfig = DEFAULT_CONFIG):
+    def __init__(self, config: ControllerConfig = DEFAULT_CONFIG, dashboard_port: int = 8080):
         self.config = config
+        self.dashboard_port = dashboard_port
         self.logger = logging.getLogger("sdwan-controller")
         
         bearer_dict = {
@@ -44,7 +51,10 @@ class SDWANControllerDaemon:
         )
         self.engine = SDWANPolicyEngine(config)
         self.actuator = RouteActuator(config)
+        self.interface_collector = InterfaceStatsCollector()
         self._running = False
+        self.http_server: HTTPServer = None
+        self.http_thread: threading.Thread = None
 
     def start(self):
         self._running = True
@@ -52,9 +62,11 @@ class SDWANControllerDaemon:
         self.logger.info("Starting Tactical Edge SD-WAN Policy Controller Daemon")
         self.logger.info(f"Monitoring Bearers: {list(self.config.bearers.keys())}")
         self.logger.info(f"Probe Interval: {self.config.probe_interval_sec}s | Window Size: {self.config.probe_window_size}")
+        self.logger.info(f"Embedded Tactical HUD & Telemetry Server on port: {self.dashboard_port}")
         self.logger.info("==========================================================")
 
         self.telemetry.start()
+        self._start_dashboard_server()
 
         # Handle termination signals
         signal.signal(signal.SIGINT, self._handle_signal)
@@ -67,6 +79,22 @@ class SDWANControllerDaemon:
         except KeyboardInterrupt:
             self.stop()
 
+    def _start_dashboard_server(self):
+        try:
+            from ..dashboard.server import TacticalDashboardHTTPHandler, DashboardDataManager
+            data_mgr = DashboardDataManager()
+            # Link existing telemetry and engine
+            data_mgr.telemetry = self.telemetry
+            data_mgr.policy_engine = self.engine
+            TacticalDashboardHTTPHandler.data_manager = data_mgr
+
+            self.http_server = ThreadingHTTPServer(("0.0.0.0", self.dashboard_port), TacticalDashboardHTTPHandler)
+            self.http_thread = threading.Thread(target=self.http_server.serve_forever, daemon=True)
+            self.http_thread.start()
+            self.logger.info(f"Tactical Operations HUD accessible at http://0.0.0.0:{self.dashboard_port}/")
+        except Exception as e:
+            self.logger.error(f"Failed to start embedded dashboard server: {e}")
+
     def _handle_signal(self, signum, frame):
         self.logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         self.stop()
@@ -74,6 +102,8 @@ class SDWANControllerDaemon:
     def stop(self):
         self._running = False
         self.telemetry.stop()
+        if self.http_server:
+            self.http_server.shutdown()
         self.logger.info("SD-WAN Policy Controller stopped.")
 
     def tick(self):
@@ -100,6 +130,7 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose debug logging")
     parser.add_argument("--interval", type=float, default=0.5, help="Probe interval in seconds")
     parser.add_argument("--check-interval", type=float, default=1.0, help="SLA check interval in seconds")
+    parser.add_argument("--port", type=int, default=8080, help="Dashboard & Telemetry HTTP port")
     args = parser.parse_args()
 
     setup_logging(args.verbose)
@@ -107,7 +138,7 @@ def main():
     cfg.probe_interval_sec = args.interval
     cfg.sla_check_interval_sec = args.check_interval
 
-    daemon = SDWANControllerDaemon(cfg)
+    daemon = SDWANControllerDaemon(cfg, dashboard_port=args.port)
     daemon.start()
 
 if __name__ == "__main__":
