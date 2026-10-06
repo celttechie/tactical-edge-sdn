@@ -13,7 +13,7 @@ data:
     degradation_penalty_metric: 500
     down_penalty_metric: 2000
     enclave_subnet: "10.10.0.0/16"
-    shore_subnet: "10.200.1.0/24"
+    shore_subnet: "10.200.1.10/32"
     bearers:
       pleops:
         interface: "eth-pleops"

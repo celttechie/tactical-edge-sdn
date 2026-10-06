@@ -95,5 +95,9 @@ class TestSDWANPolicyEngine(unittest.TestCase):
         self.assertEqual(evaluations["pleops"].computed_metric, 10 + self.config.down_penalty_metric)
         self.assertIn(primary, ["milsat", "losrf"])
 
+    def test_shore_subnet_host_route_precedence(self):
+        """Validates that shore_subnet uses /32 to avoid route ambiguity with local management /24."""
+        self.assertEqual(self.config.shore_subnet, "10.200.1.10/32")
+
 if __name__ == "__main__":
     unittest.main()
