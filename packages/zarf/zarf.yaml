@@ -11,15 +11,16 @@ components:
     required: true
     description: "Cloud-native containerized FRRouting, WireGuard, and dynamic Netlink SLA Policy Controller"
     images:
-      - ghcr.io/defenseunicorns/tactical-sdn-stack:v0.3.0
-    manifests:
-      - name: sdn-manifests
+      - tactical-sdn-stack:v0.3.0
+    charts:
+      - name: tactical-sdn
+        localPath: ../helm/tactical-sdn
         namespace: tactical-sdn
-        kustomizations:
-          - manifests
+        valuesFiles:
+          - ../helm/tactical-sdn/values.yaml
     actions:
       onDeploy:
         before:
           - cmd: "echo '==> [Zarf Action] Checking host kernel prerequisites for Tactical Edge SD-WAN...' && (test $(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0) -eq 1 || sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true)"
         after:
-          - cmd: "echo '==> [Zarf Action] Verifying Tactical Edge SD-WAN deployment status...' && (kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn-stack --timeout=60s 2>/dev/null || true)"
+          - cmd: "echo '==> [Zarf Action] Verifying Tactical Edge SD-WAN deployment status...' && (kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn --timeout=60s 2>/dev/null || true)"

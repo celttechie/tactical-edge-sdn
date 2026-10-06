@@ -96,7 +96,7 @@ cat << 'EOF' > /tmp/tactical_sdn_ssh_block.tmp
 # ==============================================================================
 EOF
 
-for vm in "legacy-router 10.200.1.2 ${HYPERVISOR_HOST}" "shore-gateway 10.200.1.10 ${HYPERVISOR_HOST}" "enclave-client 10.10.1.10 legacy-router"; do
+for vm in "ship-gateway 10.200.1.2 ${HYPERVISOR_HOST}" "shore-gateway 10.200.1.10 ${HYPERVISOR_HOST}" "enclave-client 10.10.1.10 ship-gateway"; do
     alias_name=$(echo "$vm" | awk '{print $1}')
     ip_addr=$(echo "$vm" | awk '{print $2}')
     proxy_target=$(echo "$vm" | awk '{print $3}')
@@ -114,15 +114,15 @@ Host ${alias_name} ${ip_addr}
 EOF
 done
 
-# If Host legacy-router already exists in ~/.ssh/config, update or skip
-if grep -q "Host legacy-router" "$SSH_CONFIG"; then
-    echo -e "${YELLOW}==> Host 'legacy-router' already present in ${SSH_CONFIG}. Updating entry...${NC}"
+# If Host legacy-router or ship-gateway already exists in ~/.ssh/config, update or skip
+if grep -qE "Host (legacy-router|ship-gateway)" "$SSH_CONFIG"; then
+    echo -e "${YELLOW}==> Existing tactical entries present in ${SSH_CONFIG}. Updating entries...${NC}"
     # Remove existing tactical block if present
     python3 -c "
 import re
 with open('$SSH_CONFIG', 'r') as f:
     content = f.read()
-# Replace legacy-router, shore-gateway, enclave-client blocks
+# Replace legacy-router / ship-gateway, shore-gateway, enclave-client blocks
 pattern = r'# ===+.*?Tactical Edge SDN.*?enclave-client.*?\n\n'
 new_content = re.sub(pattern, '', content, flags=re.DOTALL)
 with open('$SSH_CONFIG', 'w') as f:
@@ -165,7 +165,7 @@ fi
 echo -e "\n${BLUE}======================================================================${NC}"
 echo -e "${GREEN}  Lab SSH Configuration Complete!${NC}"
 echo -e "${BLUE}  You can now connect to lab VMs directly with host key verification:${NC}"
-echo -e "    ssh legacy-router"
+echo -e "    ssh ship-gateway"
 echo -e "    ssh shore-gateway"
 echo -e "    ssh enclave-client"
 echo -e "${BLUE}======================================================================${NC}\n"

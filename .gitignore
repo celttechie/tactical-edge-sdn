@@ -28,6 +28,7 @@ venv/
 
 # Zarf / Package Build Artifacts
 build/
+bin/
 *.tar.zst
 *.tar.gz
 *.zip

@@ -1,0 +1,8 @@
+apiVersion: v2
+name: tactical-sdn
+description: Tactical Edge SD-WAN Dataplane and SLA Policy Controller Helm Chart
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+maintainers:
+  - name: Tactical Edge SDN Team

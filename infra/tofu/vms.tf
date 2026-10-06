@@ -60,7 +60,7 @@ resource "local_file" "tactical_known_hosts" {
   file_permission = "0600"
   content         = <<-EOT
     10.200.1.2 ${tls_private_key.router_host_key.public_key_openssh}
-    legacy-router ${tls_private_key.router_host_key.public_key_openssh}
+    ship-gateway ${tls_private_key.router_host_key.public_key_openssh}
     10.200.1.10 ${tls_private_key.shore_host_key.public_key_openssh}
     shore-gateway ${tls_private_key.shore_host_key.public_key_openssh}
     10.10.1.10 ${tls_private_key.enclave_host_key.public_key_openssh}
@@ -73,10 +73,10 @@ resource "local_file" "tactical_known_hosts" {
 # ==============================================================================
 
 resource "libvirt_cloudinit_disk" "cloudinit_router" {
-  name = "legacy-router-cloudinit.iso"
+  name = "ship-gateway-cloudinit.iso"
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_router.cfg", {
-    hostname          = "legacy-router"
+    hostname          = "ship-gateway"
     admin_username    = var.admin_username
     ssh_public_key    = file(pathexpand(var.ssh_public_key_path))
     host_private_key  = tls_private_key.router_host_key.private_key_openssh
