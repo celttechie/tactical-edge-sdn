@@ -27,6 +27,48 @@ resource "libvirt_volume" "enclave_client_disk" {
 }
 
 # ==============================================================================
+# ==============================================================================
+# APPLICATION CODE ARCHIVE
+# ==============================================================================
+
+data "archive_file" "app_bundle" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../src"
+  output_path = "${path.module}/app_bundle.zip"
+}
+
+# ==============================================================================
+# ==============================================================================
+# DETERMINISTIC SSH HOST KEYS
+# ==============================================================================
+
+resource "tls_private_key" "router_host_key" {
+  algorithm = "ED25519"
+}
+
+resource "tls_private_key" "shore_host_key" {
+  algorithm = "ED25519"
+}
+
+resource "tls_private_key" "enclave_host_key" {
+  algorithm = "ED25519"
+}
+
+# Automatically pin and generate dedicated lab known_hosts file
+resource "local_file" "tactical_known_hosts" {
+  filename        = pathexpand("~/.ssh/known_hosts_tactical_lab")
+  file_permission = "0600"
+  content         = <<-EOT
+    10.200.1.2 ${tls_private_key.router_host_key.public_key_openssh}
+    legacy-router ${tls_private_key.router_host_key.public_key_openssh}
+    10.200.1.10 ${tls_private_key.shore_host_key.public_key_openssh}
+    shore-gateway ${tls_private_key.shore_host_key.public_key_openssh}
+    10.10.1.10 ${tls_private_key.enclave_host_key.public_key_openssh}
+    enclave-client ${tls_private_key.enclave_host_key.public_key_openssh}
+  EOT
+}
+
+# ==============================================================================
 # CLOUD-INIT DISKS
 # ==============================================================================
 
@@ -34,9 +76,12 @@ resource "libvirt_cloudinit_disk" "cloudinit_router" {
   name = "legacy-router-cloudinit.iso"
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_router.cfg", {
-    hostname       = "legacy-router"
-    admin_username = var.admin_username
-    ssh_public_key = file(pathexpand(var.ssh_public_key_path))
+    hostname          = "legacy-router"
+    admin_username    = var.admin_username
+    ssh_public_key    = file(pathexpand(var.ssh_public_key_path))
+    host_private_key  = tls_private_key.router_host_key.private_key_openssh
+    host_public_key   = tls_private_key.router_host_key.public_key_openssh
+    app_zip_b64       = data.archive_file.app_bundle.output_base64sha256 != "" ? filebase64(data.archive_file.app_bundle.output_path) : ""
   })
   network_config = templatefile("${path.module}/templates/network_config_router.cfg", {})
 }
@@ -45,9 +90,12 @@ resource "libvirt_cloudinit_disk" "cloudinit_shore" {
   name = "shore-gateway-cloudinit.iso"
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_shore.cfg", {
-    hostname       = "shore-gateway"
-    admin_username = var.admin_username
-    ssh_public_key = file(pathexpand(var.ssh_public_key_path))
+    hostname          = "shore-gateway"
+    admin_username    = var.admin_username
+    ssh_public_key    = file(pathexpand(var.ssh_public_key_path))
+    host_private_key  = tls_private_key.shore_host_key.private_key_openssh
+    host_public_key   = tls_private_key.shore_host_key.public_key_openssh
+    app_zip_b64       = data.archive_file.app_bundle.output_base64sha256 != "" ? filebase64(data.archive_file.app_bundle.output_path) : ""
   })
   network_config = templatefile("${path.module}/templates/network_config_shore.cfg", {})
 }
@@ -56,9 +104,12 @@ resource "libvirt_cloudinit_disk" "cloudinit_enclave" {
   name = "enclave-client-cloudinit.iso"
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_enclave.cfg", {
-    hostname       = "enclave-client"
-    admin_username = var.admin_username
-    ssh_public_key = file(pathexpand(var.ssh_public_key_path))
+    hostname          = "enclave-client"
+    admin_username    = var.admin_username
+    ssh_public_key    = file(pathexpand(var.ssh_public_key_path))
+    host_private_key  = tls_private_key.enclave_host_key.private_key_openssh
+    host_public_key   = tls_private_key.enclave_host_key.public_key_openssh
+    app_zip_b64       = data.archive_file.app_bundle.output_base64sha256 != "" ? filebase64(data.archive_file.app_bundle.output_path) : ""
   })
   network_config = templatefile("${path.module}/templates/network_config_enclave.cfg", {})
 }
