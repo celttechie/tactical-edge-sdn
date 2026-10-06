@@ -1,0 +1,25 @@
+# ==============================================================================
+# Tactical Edge SDN - OpenTofu Lab Variables Example
+# Copy to terraform.tfvars and customize for your environment
+# ==============================================================================
+
+# Libvirt daemon URI (nested hypervisor socket)
+libvirt_uri = "qemu+tcp://127.0.0.1:16509/system"
+
+# Libvirt storage pool for VM disk images
+storage_pool = "default"
+
+# Administrative username provisioned inside the ephemeral VMs
+admin_username = "bjarrett"
+
+# SSH public key injected into cloud-init for the admin user
+ssh_public_key_path = "~/.ssh/id_sandbox_hypervisor_ed25519.pub"
+
+# SSH private key used to connect to the VMs
+ssh_private_key_path = "~/.ssh/id_sandbox_hypervisor_ed25519"
+
+# SSH host alias or IP of the L2 hypervisor node (ProxyJump gateway)
+hypervisor_ssh_host = "sandbox-hypervisor-node"
+
+# Ubuntu 22.04 base cloud image
+base_image_source = "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"

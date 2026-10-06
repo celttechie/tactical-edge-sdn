@@ -27,7 +27,7 @@ class ControllerConfig:
     down_penalty_metric: int = 2000
     enable_frr_bgp: bool = False
     enclave_subnet: str = "10.10.0.0/16"
-    shore_subnet: str = "10.200.1.0/24"
+    shore_subnet: str = "10.200.1.10/32"
     bearers: Dict[str, BearerConfig] = field(default_factory=lambda: {
         "pleops": BearerConfig(
             name="pleops",

@@ -24,3 +24,30 @@ output "networks" {
     shore_hub       = libvirt_network.br_shore_hub.name
   }
 }
+
+output "ssh_config" {
+  description = "OpenSSH client configuration block for the ephemeral lab VMs"
+  value       = <<-EOT
+    # Tactical Edge SDN - Ephemeral Nested Lab VMs
+    Host legacy-router 10.200.1.2
+        HostName 10.200.1.2
+        User ${var.admin_username}
+        ProxyJump ${var.hypervisor_ssh_host}
+        IdentityFile ${var.ssh_private_key_path}
+        StrictHostKeyChecking accept-new
+
+    Host shore-gateway 10.200.1.10
+        HostName 10.200.1.10
+        User ${var.admin_username}
+        ProxyJump ${var.hypervisor_ssh_host}
+        IdentityFile ${var.ssh_private_key_path}
+        StrictHostKeyChecking accept-new
+
+    Host enclave-client 10.10.1.10
+        HostName 10.10.1.10
+        User ${var.admin_username}
+        ProxyJump legacy-router
+        IdentityFile ${var.ssh_private_key_path}
+        StrictHostKeyChecking accept-new
+  EOT
+}

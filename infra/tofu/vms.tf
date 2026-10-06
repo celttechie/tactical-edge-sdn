@@ -35,6 +35,7 @@ resource "libvirt_cloudinit_disk" "cloudinit_router" {
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_router.cfg", {
     hostname       = "legacy-router"
+    admin_username = var.admin_username
     ssh_public_key = file(pathexpand(var.ssh_public_key_path))
   })
   network_config = templatefile("${path.module}/templates/network_config_router.cfg", {})
@@ -45,6 +46,7 @@ resource "libvirt_cloudinit_disk" "cloudinit_shore" {
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_shore.cfg", {
     hostname       = "shore-gateway"
+    admin_username = var.admin_username
     ssh_public_key = file(pathexpand(var.ssh_public_key_path))
   })
   network_config = templatefile("${path.module}/templates/network_config_shore.cfg", {})
@@ -55,6 +57,7 @@ resource "libvirt_cloudinit_disk" "cloudinit_enclave" {
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_enclave.cfg", {
     hostname       = "enclave-client"
+    admin_username = var.admin_username
     ssh_public_key = file(pathexpand(var.ssh_public_key_path))
   })
   network_config = templatefile("${path.module}/templates/network_config_enclave.cfg", {})

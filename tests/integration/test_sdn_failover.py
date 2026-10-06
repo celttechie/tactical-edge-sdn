@@ -16,13 +16,7 @@ import json
 import sys
 from datetime import datetime
 
-SSH_ROUTER_CMD = [
-    "ssh", "-A",
-    "-o", "StrictHostKeyChecking=no",
-    "-o", "UserKnownHostsFile=/dev/null",
-    "-o", "ProxyCommand=ssh -o StrictHostKeyChecking=no -W %h:%p sandbox-hypervisor-node",
-    "bjarrett@10.200.1.2"
-]
+SSH_ROUTER_CMD = ["ssh", "legacy-router"]
 
 def run_cmd(cmd, check=True):
     if isinstance(cmd, str):
@@ -39,10 +33,7 @@ def exec_on_router(command: str) -> str:
 
 def probe_enclave_to_shore(target_ip: str = "10.100.1.1"):
     """Probe Shore Gateway from Enclave Client via router."""
-    probe_cmd = SSH_ROUTER_CMD + [
-        f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null bjarrett@10.10.1.10 "
-        f"'curl -s -m 6 http://{target_ip}:8080'"
-    ]
+    probe_cmd = ["ssh", "enclave-client", f"curl -s -m 6 http://{target_ip}:8080"]
     t0 = time.time()
     res = run_cmd(probe_cmd, check=False)
     elapsed_ms = (time.time() - t0) * 1000.0
