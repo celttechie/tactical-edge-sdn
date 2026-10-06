@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Edge SD-WAN // Operations HUD & Chaos Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="tactical-hud">
+    <!-- Top Header Bar -->
+    <header class="hud-header">
+        <div class="header-left">
+            <div class="logo-group">
+                <div class="radar-sweep"></div>
+                <div class="header-title">
+                    <span class="classification-badge">UNCLASSIFIED // DEMO C2</span>
+                    <h1>TACTICAL EDGE SD-WAN <span class="accent-text">OPS HUD</span></h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="overall-status-box" id="overall-status-box">
+                <span class="status-label">MISSION READINESS:</span>
+                <span class="status-value badge-fmc" id="overall-readiness">FMC (OPERATIONAL)</span>
+            </div>
+            <div class="active-route-box">
+                <span class="status-label">ACTIVE PRIMARY PATH:</span>
+                <span class="active-route-badge" id="header-primary-route">P-LEO SATCOM</span>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="telemetry-timer">
+                <span class="timer-label">ZULU TIME:</span>
+                <span class="timer-value" id="zulu-clock">00:00:00Z</span>
+            </div>
+            <div class="connection-status">
+                <span class="live-dot pulse-green" id="sse-indicator"></span>
+                <span id="sse-status-text">LIVE TELEMETRY (2Hz)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="hud-container">
+        
+        <!-- SECTION 1: Dynamic Topology & Packet Flow Visualizer -->
+        <section class="hud-panel topology-panel">
+            <div class="panel-header">
+                <h2><span class="icon">☵</span> LIVE MULTI-BEARER TOPOLOGY & PACKET FLOW</h2>
+                <div class="traffic-metrics-pill" id="enclave-traffic-pill">
+                    C2 TRAFFIC STREAM: <span class="highlight" id="top-enclave-rate">40.0 pkts/s</span> | <span class="highlight" id="top-enclave-kbps">220.0 Kbps</span>
+                </div>
+            </div>
+            <div class="topology-wrapper">
+                <canvas id="topology-canvas" width="1100" height="260"></canvas>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Multi-Bearer Health Telemetry Cards -->
+        <section class="hud-panel bearers-panel">
+            <div class="panel-header">
+                <h2><span class="icon">▦</span> BEARER SLA QUALITY & ROUTING METRICS</h2>
+                <div class="panel-subtitle">Real-Time Linux Kernel (/proc/net/dev) & Netlink SLA Prober</div>
+            </div>
+            <div class="bearer-grid">
+                
+                <!-- Bearer 1: P-LEO Satellite -->
+                <div class="bearer-card" id="card-pleops">
+                    <div class="card-header">
+                        <div class="bearer-title-group">
+                            <span class="bearer-icon">🛰️</span>
+                            <div>
+                                <div class="bearer-name">P-LEO SATELLITE</div>
+                                <div class="bearer-iface">eth-pleops (10.100.1.2)</div>
+                            </div>
+                        </div>
+                        <div class="card-badges">
+                            <span class="route-badge active-badge" id="pleops-route-badge">PRIMARY</span>
+                            <span class="readiness-badge badge-fmc" id="pleops-readiness">FMC</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">RTT LATENCY</div>
+                            <div class="metric-value" id="pleops-latency">24.5 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">JITTER</div>
+                            <div class="metric-value" id="pleops-jitter">2.1 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">PACKET LOSS</div>
+                            <div class="metric-value" id="pleops-loss">0.0 <span class="unit">%</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">SLA SCORE</div>
+                            <div class="metric-value" id="pleops-score">98.5</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">THROUGHPUT</div>
+                            <div class="metric-value highlight-cyan" id="pleops-throughput">218.4 <span class="unit">Kbps</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">DROPPED PKTS</div>
+                            <div class="metric-value" id="pleops-drops">0</div>
+                        </div>
+                    </div>
+                    <div class="chaos-pill" id="pleops-chaos-pill">STATUS: NORMAL BASELINE</div>
+                </div>
+
+                <!-- Bearer 2: MILSATCOM GEO -->
+                <div class="bearer-card" id="card-milsat">
+                    <div class="card-header">
+                        <div class="bearer-title-group">
+                            <span class="bearer-icon">🛰️</span>
+                            <div>
+                                <div class="bearer-name">MILSATCOM GEO</div>
+                                <div class="bearer-iface">eth-milsat (10.100.2.2)</div>
+                            </div>
+                        </div>
+                        <div class="card-badges">
+                            <span class="route-badge standby-badge" id="milsat-route-badge">STANDBY</span>
+                            <span class="readiness-badge badge-fmc" id="milsat-readiness">FMC</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">RTT LATENCY</div>
+                            <div class="metric-value" id="milsat-latency">252.0 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">JITTER</div>
+                            <div class="metric-value" id="milsat-jitter">8.4 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">PACKET LOSS</div>
+                            <div class="metric-value" id="milsat-loss">0.2 <span class="unit">%</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">SLA SCORE</div>
+                            <div class="metric-value" id="milsat-score">76.0</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">THROUGHPUT</div>
+                            <div class="metric-value" id="milsat-throughput">4.2 <span class="unit">Kbps</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">DROPPED PKTS</div>
+                            <div class="metric-value" id="milsat-drops">0</div>
+                        </div>
+                    </div>
+                    <div class="chaos-pill" id="milsat-chaos-pill">STATUS: NORMAL BASELINE</div>
+                </div>
+
+                <!-- Bearer 3: Tactical LOS-RF -->
+                <div class="bearer-card" id="card-losrf">
+                    <div class="card-header">
+                        <div class="bearer-title-group">
+                            <span class="bearer-icon">📡</span>
+                            <div>
+                                <div class="bearer-name">TACTICAL LOS-RF</div>
+                                <div class="bearer-iface">eth-losrf (10.100.3.2)</div>
+                            </div>
+                        </div>
+                        <div class="card-badges">
+                            <span class="route-badge standby-badge" id="losrf-route-badge">STANDBY</span>
+                            <span class="readiness-badge badge-fmc" id="losrf-readiness">FMC</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">RTT LATENCY</div>
+                            <div class="metric-value" id="losrf-latency">52.3 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">JITTER</div>
+                            <div class="metric-value" id="losrf-jitter">4.1 <span class="unit">ms</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">PACKET LOSS</div>
+                            <div class="metric-value" id="losrf-loss">0.5 <span class="unit">%</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">SLA SCORE</div>
+                            <div class="metric-value" id="losrf-score">88.2</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">THROUGHPUT</div>
+                            <div class="metric-value" id="losrf-throughput">4.1 <span class="unit">Kbps</span></div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">DROPPED PKTS</div>
+                            <div class="metric-value" id="losrf-drops">0</div>
+                        </div>
+                    </div>
+                    <div class="chaos-pill" id="losrf-chaos-pill">STATUS: NORMAL BASELINE</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: Real-Time Charts & Historical Timeline -->
+        <section class="hud-panel charts-panel">
+            <div class="panel-header">
+                <h2><span class="icon">📈</span> REAL-TIME THROUGHPUT & DROPPED PACKET TIMELINE</h2>
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="legend-color color-pleops"></span> P-LEO</span>
+                    <span class="legend-item"><span class="legend-color color-milsat"></span> MILSATCOM</span>
+                    <span class="legend-item"><span class="legend-color color-losrf"></span> LOS-RF</span>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="throughput-chart" width="1100" height="180"></canvas>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Interactive DDIL Chaos Warfare Console & Event Log -->
+        <div class="bottom-grid">
+            
+            <!-- Chaos Injection Console -->
+            <section class="hud-panel chaos-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">⚡</span> DDIL CHAOS INJECTION CONSOLE</h2>
+                    <span class="blink-tag">WARFARE SIMULATION</span>
+                </div>
+                <div class="chaos-controls-grid">
+                    <button class="chaos-btn btn-danger" onclick="triggerChaos('jam_pleops')">
+                        <span class="btn-icon">🚨</span>
+                        <div class="btn-text">
+                            <div class="btn-title">EW JAMMING ATTACK</div>
+                            <div class="btn-desc">Sever P-LEO Primary Link (100% Loss)</div>
+                        </div>
+                    </button>
+
+                    <button class="chaos-btn btn-warning" onclick="triggerChaos('rain_fade_milsat')">
+                        <span class="btn-icon">🌧️</span>
+                        <div class="btn-text">
+                            <div class="btn-title">SATELLITE RAIN FADE</div>
+                            <div class="btn-desc">Inject 350ms Latency + 15% Loss on MILSAT</div>
+                        </div>
+                    </button>
+
+                    <button class="chaos-btn btn-warning" onclick="triggerChaos('degrade_losrf')">
+                        <span class="btn-icon">📡</span>
+                        <div class="btn-text">
+                            <div class="btn-title">RF MULTIPATH / JAM</div>
+                            <div class="btn-desc">Inject 150ms Latency + 20% Loss on LOS-RF</div>
+                        </div>
+                    </button>
+
+                    <button class="chaos-btn btn-flapping" onclick="triggerChaos('flap_link')">
+                        <span class="btn-icon">🔄</span>
+                        <div class="btn-text">
+                            <div class="btn-title">LINK FLAP SIMULATOR</div>
+                            <div class="btn-desc">Trigger Rapid Outage & Flapping Cycle</div>
+                        </div>
+                    </button>
+
+                    <button class="chaos-btn btn-success" onclick="triggerChaos('clean_slate')">
+                        <span class="btn-icon">🛡️</span>
+                        <div class="btn-text">
+                            <div class="btn-title">RESTORE CLEAN SLATE</div>
+                            <div class="btn-desc">Clear All Netem Impairments Across Bearers</div>
+                        </div>
+                    </button>
+
+                    <button class="chaos-btn btn-info" onclick="triggerChaos('apply_profiles')">
+                        <span class="btn-icon">⚙️</span>
+                        <div class="btn-text">
+                            <div class="btn-title">APPLY TACTICAL PROFILES</div>
+                            <div class="btn-desc">Restore Standard DoD Multi-Bearer Baselines</div>
+                        </div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Real-Time C2 Event & Routing Audit Stream -->
+            <section class="hud-panel events-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">📋</span> TACTICAL C2 ROUTING & EVENT AUDIT LOG</h2>
+                    <span class="event-count-badge" id="event-count">0 EVENTS</span>
+                </div>
+                <div class="events-terminal" id="events-terminal">
+                    <div class="event-entry event-info">
+                        <span class="event-time">[INIT]</span>
+                        <span class="event-tag">[SYS]</span>
+                        <span class="event-msg">Tactical Operations HUD initialized. Awaiting live telemetry stream...</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <footer class="hud-footer">
+        <div>TACTICAL EDGE SD-WAN SYSTEM v0.4.0 // AIR-GAPPED ZARF PACKAGE // NIST SP 800-53 REV 5 COMPLIANT</div>
+        <div>SIMULATED SHIP ENCLAVE (10.10.1.10) ⟷ SD-WAN CNF (10.200.1.2) ⟷ SHORE C2 GATEWAY (10.200.1.10)</div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
