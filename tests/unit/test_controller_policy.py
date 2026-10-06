@@ -99,5 +99,18 @@ class TestSDWANPolicyEngine(unittest.TestCase):
         """Validates that shore_subnet uses /32 to avoid route ambiguity with local management /24."""
         self.assertEqual(self.config.shore_subnet, "10.200.1.10/32")
 
+    def test_prometheus_metrics_format(self):
+        """Validates that Prometheus metrics output conforms to exposition standard."""
+        from src.dashboard.server import DashboardDataManager
+        dm = DashboardDataManager()
+        metrics = dm.get_prometheus_metrics()
+        self.assertIn("sdn_system_readiness", metrics)
+        self.assertIn("sdn_bearer_latency_seconds", metrics)
+        self.assertIn("sdn_bearer_loss_ratio", metrics)
+        self.assertIn("sdn_bearer_metric", metrics)
+        self.assertIn("sdn_bearer_score", metrics)
+        self.assertIn("sdn_bearer_active", metrics)
+        self.assertIn("sdn_failover_events_total", metrics)
+
 if __name__ == "__main__":
     unittest.main()

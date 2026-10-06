@@ -35,16 +35,12 @@ apply_netem_to_bridge_and_taps() {
     local br="$1"
     local netem_args="$2"
     
-    # Apply to bridge root
-    run_on_hypervisor "tc qdisc replace dev $br root netem $netem_args 2>/dev/null || true"
-    
-    # Apply to all tap interfaces currently enslaved to the bridge
-    run_on_hypervisor "for tap in \$(ip -o link show master $br | cut -d: -f2 | tr -d ' '); do tc qdisc replace dev \$tap root netem $netem_args 2>/dev/null || true; done"
+    ssh "$HYPERVISOR_HOST" "sudo tc qdisc replace dev $br root netem $netem_args 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc replace dev \$tap root netem $netem_args 2>/dev/null || true; done"
 }
 
 clear_netem_on_bridge_and_taps() {
     local br="$1"
-    run_on_hypervisor "tc qdisc del dev $br root 2>/dev/null || true; for tap in \$(ip -o link show master $br | cut -d: -f2 | tr -d ' '); do tc qdisc del dev \$tap root 2>/dev/null || true; done"
+    ssh "$HYPERVISOR_HOST" "sudo tc qdisc del dev $br root 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc del dev \$tap root 2>/dev/null || true; done"
 }
 
 case "${1:-}" in

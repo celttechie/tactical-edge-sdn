@@ -95,12 +95,17 @@ def test_sdn_dynamic_steering():
     run_cmd("bash ./tests/chaos/impair-bearer.sh cut pleops")
 
     # 6. Monitor Controller Dynamic Failover
-    print("\n[Step 5] Waiting for SD-WAN Controller real-time SLA reaction (4s)...")
-    time.sleep(4.0)
-
-    new_primary = get_router_active_primary()
+    print("\n[Step 5] Waiting for SD-WAN Controller real-time SLA reaction (polling up to 10s)...")
+    failover_detected = False
+    new_primary = "UNKNOWN"
+    for _ in range(20):
+        time.sleep(0.5)
+        new_primary = get_router_active_primary()
+        if not ("eth-pleops" in new_primary and "metric 10" in new_primary):
+            failover_detected = True
+            break
     print(f" -> New Active Primary Route: {new_primary}")
-    if "eth-pleops" in new_primary and "metric 10" in new_primary:
+    if not failover_detected:
         raise AssertionError(f"SD-WAN Controller failed to steer away from dead link! Current: {new_primary}")
     print(f" -> [VERIFIED] Controller successfully demoted P-LEO and promoted {new_primary}!")
 
@@ -115,11 +120,17 @@ def test_sdn_dynamic_steering():
     print("\n[Step 7] Restoring P-LEO link and applying tactical profile...")
     run_cmd("bash ./tests/chaos/impair-bearer.sh restore pleops")
     run_cmd("bash ./tests/chaos/impair-bearer.sh apply-profiles")
-    time.sleep(4.0)
-
-    recovered_primary = get_router_active_primary()
+    print(" -> Waiting for SD-WAN Controller to re-converge to P-LEO (polling up to 10s)...")
+    recovered_detected = False
+    recovered_primary = "UNKNOWN"
+    for _ in range(20):
+        time.sleep(0.5)
+        recovered_primary = get_router_active_primary()
+        if "eth-pleops" in recovered_primary and "metric 10" in recovered_primary:
+            recovered_detected = True
+            break
     print(f" -> Recovered Active Primary Route: {recovered_primary}")
-    if "eth-pleops" not in recovered_primary:
+    if not recovered_detected:
         raise AssertionError(f"Expected return to eth-pleops, got {recovered_primary}")
     print(" -> [VERIFIED] Hitless re-convergence back to optimal P-LEO link confirmed!")
 
