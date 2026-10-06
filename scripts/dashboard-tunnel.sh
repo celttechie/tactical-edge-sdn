@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Tactical Operations HUD Persistent Tunnel Daemon
-# Forwards port 8080 on all host interfaces (0.0.0.0:8080) to legacy-router
+# Forwards port 8080 on all host interfaces (0.0.0.0:8080) to ship-gateway
 # ==============================================================================
 
 set -euo pipefail

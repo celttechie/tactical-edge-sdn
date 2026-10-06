@@ -201,11 +201,18 @@ class DashboardDataManager:
 
         res_code = 0
         res_out = []
+        is_root = (os.geteuid() == 0)
         for c in cmds:
             try:
-                proc = subprocess.run(c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+                # If running as root (such as in container), drop unnecessary sudo prefix
+                cmd_to_run = c
+                if is_root and cmd_to_run.startswith("sudo "):
+                    cmd_to_run = cmd_to_run[5:]
+                proc = subprocess.run(cmd_to_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
                 res_code = max(res_code, proc.returncode)
                 res_out.append(proc.stdout)
+                if proc.stderr:
+                    res_out.append(proc.stderr)
             except Exception as e:
                 res_code = -1
                 res_out.append(str(e))
