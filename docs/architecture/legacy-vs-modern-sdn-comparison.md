@@ -152,8 +152,8 @@ This section provides the end-to-end operational instructions to deploy the lab 
    ```
    The dashboard tunnel forwards `0.0.0.0:8080` through the hypervisor to `ship-gateway:8080`.
    Open **`http://localhost:8080`** in your browser.
-   - **Mode Indicator:** Running directly as the host systemd daemon.
-   - **Observability:** Telemetry and live link metrics stream directly from the bare VM controller.
+   - **Day 0 Baseline Visualization:** The HUD displays the gateway as `LEGACY ROUTER 10.200.1.2 (VNF)` in amber with the `STAGE 1: DAY 0 BASELINE` stepper active.
+   - **Observability:** Telemetry and live link metrics stream directly from the bare VM controller while illustrating gray-failure susceptibility under static routing.
 
 ---
 
@@ -167,16 +167,24 @@ To transition `ship-gateway` from the legacy monolithic VNF architecture to the 
    ```
    *Outputs `build/zarf-package-tactical-sdn-stack-amd64-0.3.0.tar.zst` containing the Helm chart, container images, and SBOM.*
 
-2. **Execute the In-Place Modernization Script:**
-   Run the automated modernization pipeline:
+2. **Execute In-Place Modernization (Interactive HUD or CLI):**
+   
+   #### Option A: One-Click Modernization via Operations HUD
+   In your browser at **`http://localhost:8080`**, utilize the **Modernization Lifecycle Panel**:
+   - **Step 1: Bootstrap K3s**: Starts K3s in the background with zero routing downtime for active enclaves.
+   - **Step 2: Init Zarf Registry**: Initializes the offline in-cluster seed registry (`zarf-docker-registry`) and mutating webhook agents.
+   - **Step 3: Atomic Hot Cutover**: Deploys the containerized SD-WAN CNF DaemonSet and atomically retires the legacy routing service once the pod reports healthy.
+   *(Or click **"Full Autonomous Upgrade"** to trigger the complete transition automatically).*
+
+   #### Option B: Automated CLI Modernization Pipeline
    ```bash
    ./scripts/modernize-ship-node.sh ship-gateway
    ```
    *This automated workflow:*
-   - Stops and disables the bare-metal `sdwan-controller.service` systemd unit.
-   - Stages the `k3s` runtime and bootstraps lightweight Kubernetes with local storage enabled.
-   - Stages the Zarf binary and init cache to execute `zarf init` (deploying the offline seed registry).
-   - Deploys the self-contained Zarf package (`zarf package deploy`) into the `tactical-sdn` namespace with zero external network connectivity.
+   - Verifies the legacy service remains active while pre-staging binaries, images, and Zarf packages.
+   - Bootstraps lightweight Kubernetes (K3s) with local storage enabled.
+   - Deploys the self-contained Zarf package (`zarf package deploy`) into the `tactical-sdn` namespace.
+   - Atomically cuts over to the containerized CNF and flushes stale connection tracking states.
 
 3. **Verify the Modernized CNF Posture:**
    Run the automated verification test:
@@ -195,6 +203,7 @@ To transition `ship-gateway` from the legacy monolithic VNF architecture to the 
    ./scripts/dashboard-tunnel.sh status
    ```
    Refresh **`http://localhost:8080`** in your browser.
+   - **Modernized Day 2 State:** The HUD topology transforms into `SD-WAN CNF 10.200.1.2 (K3s)` in cyan with `STAGE 4: CLOUD-NATIVE CNF ACTIVE` in green.
    - **Port Consistency:** The containerized CNF inherits host-networking (`hostNetwork: true`), allowing the same port 8080 tunnel to seamlessly serve the HUD without reconfiguring ports or SSH proxies.
-   - **Container-Aware Actuation:** All chaos injection buttons (Cut P-LEO, Degrade MILSAT, Restore Clean) execute directly inside the container pod using bounded `NET_ADMIN` Linux capabilities.
+   - **Container-Aware Actuation:** Dynamic SLA path steering and chaos injection buttons (Cut P-LEO, Degrade MILSAT, Restore Clean) execute directly inside the container pod using bounded `NET_ADMIN` Linux capabilities.
 

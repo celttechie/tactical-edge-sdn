@@ -191,13 +191,24 @@ function drawTopology() {
     });
 
     // 4. Draw Nodes
+    const isLegacyGateway = latestState && latestState.modernization && latestState.modernization.gateway_type === "LEGACY_VNF";
+    if (isLegacyGateway) {
+        topoNodes.router.label = "LEGACY ROUTER\n10.200.1.2 (VNF)";
+        topoNodes.router.icon = "📟";
+    } else {
+        topoNodes.router.label = "SD-WAN CNF\n10.200.1.2 (K3s)";
+        topoNodes.router.icon = "🔀";
+    }
+
     Object.keys(topoNodes).forEach(nodeKey => {
         const node = topoNodes[nodeKey];
         const isActive = (nodeKey === primaryBearer || nodeKey === "enclave" || nodeKey === "router" || nodeKey === "shore");
         
         // Node Box
-        ctx.fillStyle = "#151d2a";
-        ctx.strokeStyle = isActive ? "#00e5ff" : "#334155";
+        ctx.fillStyle = (nodeKey === "router" && isLegacyGateway) ? "#20171a" : "#151d2a";
+        const strokeColor = (nodeKey === "router" && isLegacyGateway) ? "#ff9900" :
+                            isActive ? "#00e5ff" : "#334155";
+        ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 2;
         
         ctx.beginPath();
@@ -211,7 +222,7 @@ function drawTopology() {
         ctx.fillText(node.icon, node.x, node.y - 4);
 
         // Labels
-        ctx.fillStyle = "#e2e8f0";
+        ctx.fillStyle = (nodeKey === "router" && isLegacyGateway) ? "#ffb800" : "#e2e8f0";
         ctx.font = "9px 'Share Tech Mono', monospace";
         const lines = node.label.split("\n");
         ctx.fillText(lines[0], node.x, node.y + 12);
@@ -290,6 +301,11 @@ function drawThroughputChart() {
 // Update UI Components with Live Telemetry State
 function renderState(state) {
     latestState = state;
+
+    // 0. Update Modernization Lifecycle Stepper
+    if (state.modernization) {
+        updateModernizationUI(state.modernization);
+    }
 
     // 1. Overall Mission Readiness Badge
     const readEl = document.getElementById("overall-readiness");
@@ -561,6 +577,567 @@ async function triggerChaos(action, target = "") {
     }
 }
 
+// Interactive Modernization Lifecycle Trigger
+let transitionPollTimer = null;
+let lastKnownCompletedStage = null;
+
+async function pollModernization() {
+    try {
+        const resp = await fetch("/api/modernization?t=" + Date.now());
+        if (resp.ok) {
+            const data = await resp.json();
+            updateModernizationUI(data);
+            if (!data.is_in_transition && transitionPollTimer) {
+                clearInterval(transitionPollTimer);
+                transitionPollTimer = null;
+            }
+        }
+    } catch (e) {
+        console.debug("Modernization poll error:", e);
+    }
+}
+
+async function triggerModernization(action) {
+    console.log(`Triggering Modernization Action: ${action}`);
+    const transMsg = document.getElementById("modern-transition-msg");
+    const completedMsg = document.getElementById("modern-completed-msg");
+    const banner = document.getElementById("modern-alert-banner");
+    const bannerText = document.getElementById("modern-alert-text");
+    const bannerProg = document.getElementById("modern-alert-progress");
+
+    // Map action to target stage
+    let targetStage = 1;
+    let actionLabel = "Action";
+    if (action === "reset_day0") { targetStage = 1; actionLabel = "Resetting Day 0 Legacy Router"; }
+    else if (action === "bootstrap_k3s") { targetStage = 2; actionLabel = "Bootstrapping K3s Node"; }
+    else if (action === "init_zarf") { targetStage = 3; actionLabel = "Staging Zarf Registry"; }
+    else if (action === "cutover_cnf" || action === "deploy_cnf") { targetStage = 4; actionLabel = "Atomic Hot Cutover"; }
+    else if (action === "full_upgrade") { targetStage = 4; actionLabel = "Full Modernization Pipeline"; }
+
+    // Instant optimistic UI feedback
+    if (transMsg) transMsg.innerText = `[IN PROGRESS] Initiating ${actionLabel}...`;
+    if (completedMsg) completedMsg.innerText = "";
+    if (banner) {
+        banner.className = "modern-alert-banner in-progress";
+        if (bannerText) bannerText.innerText = `[SETTING UP] ${actionLabel} in progress...`;
+        if (bannerProg) bannerProg.innerText = "[20%]";
+    }
+
+    // Put target card into optimistic in-progress state
+    const targetCard = document.getElementById(`step-card-${targetStage}`);
+    const targetStatus = document.getElementById(`step-${targetStage}-status`);
+    const targetProg = document.getElementById(`step-${targetStage}-progress`);
+    const targetProgFill = document.getElementById(`step-${targetStage}-progress-fill`);
+    const targetBadge = document.getElementById(`step-${targetStage}-badge`);
+
+    if (targetCard) {
+        targetCard.classList.remove("current", "completed", "setup-completed", "ready-next");
+        targetCard.classList.add("in-progress");
+    }
+    if (targetStatus) targetStatus.innerHTML = `<span class="step-spinner">⚙</span> SETTING UP (20%)...`;
+    if (targetProg) targetProg.style.display = "block";
+    if (targetProgFill) targetProgFill.style.width = "20%";
+    if (targetBadge) targetBadge.style.display = "none";
+
+    // Disable modern action buttons during transition
+    const buttons = document.querySelectorAll(".modern-btn");
+    buttons.forEach(b => b.disabled = true);
+
+    try {
+        const resp = await fetch("/api/modernization", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: action })
+        });
+        const result = await resp.json();
+        console.log("Modernization Action Result:", result);
+    } catch (err) {
+        console.error("Failed to trigger modernization action:", err);
+        if (transMsg) transMsg.innerText = "Error triggering action.";
+    }
+
+    // Start high-frequency polling while in transition
+    if (transitionPollTimer) clearInterval(transitionPollTimer);
+    transitionPollTimer = setInterval(pollModernization, 400);
+}
+
+// Update Modernization Stepper UI
+function updateModernizationUI(modern) {
+    if (!modern) return;
+
+    const stageBadge = document.getElementById("hud-modern-stage-badge");
+    const gatewayTag = document.getElementById("topo-gateway-tag");
+    const transMsg = document.getElementById("modern-transition-msg");
+    const completedMsg = document.getElementById("modern-completed-msg");
+    const banner = document.getElementById("modern-alert-banner");
+    const bannerIcon = document.getElementById("modern-alert-icon");
+    const bannerText = document.getElementById("modern-alert-text");
+    const bannerProg = document.getElementById("modern-alert-progress");
+
+    // Update Header Badge
+    if (stageBadge) {
+        stageBadge.innerText = `STAGE ${modern.stage_number}: ${modern.stage_name.toUpperCase()}`;
+        if (modern.stage_number === 1) {
+            stageBadge.style.color = "#ffb800";
+            stageBadge.style.borderColor = "#ffb800";
+            stageBadge.style.background = "rgba(255, 184, 0, 0.15)";
+        } else if (modern.stage_number === 4) {
+            stageBadge.style.color = "#00ff66";
+            stageBadge.style.borderColor = "#00ff66";
+            stageBadge.style.background = "rgba(0, 255, 102, 0.15)";
+        } else {
+            stageBadge.style.color = "#00e5ff";
+            stageBadge.style.borderColor = "#00e5ff";
+            stageBadge.style.background = "rgba(0, 229, 255, 0.15)";
+        }
+    }
+
+    // Update Topology Tag
+    if (gatewayTag) {
+        if (modern.gateway_type === "LEGACY_VNF") {
+            gatewayTag.innerText = "GATEWAY: LEGACY VNF (STATIC METRICS) [DAY 0]";
+            gatewayTag.style.color = "#ffb800";
+            gatewayTag.style.borderColor = "#ffb800";
+            gatewayTag.style.background = "rgba(255, 184, 0, 0.15)";
+        } else {
+            gatewayTag.innerText = "GATEWAY: CLOUD-NATIVE CNF (K3s DYNAMIC SDN) [DAY 2]";
+            gatewayTag.style.color = "#00e5ff";
+            gatewayTag.style.borderColor = "#00e5ff";
+            gatewayTag.style.background = "rgba(0, 229, 255, 0.15)";
+        }
+    }
+
+    // Update Sidebar Posture Status Card
+    const sideMode = document.getElementById("sidebar-mode-val");
+    const sideData = document.getElementById("sidebar-dataplane-val");
+    if (sideMode) {
+        if (modern.stage_number === 4) {
+            sideMode.innerText = "DYNAMIC SLA STEERING";
+            sideMode.className = "status-val highlight-cyan";
+        } else if (modern.stage_number === 1) {
+            sideMode.innerText = "STATIC WEIGHTED METRICS (DAY 0)";
+            sideMode.className = "status-val highlight-amber";
+        } else {
+            sideMode.innerText = "STAGING / MIGRATION ACTIVE";
+            sideMode.className = "status-val highlight-cyan";
+        }
+    }
+    if (sideData) {
+        if (modern.gateway_type === "LEGACY_VNF") {
+            sideData.innerText = "LEGACY LINUX VNF (HOST)";
+            sideData.className = "status-val highlight-amber";
+        } else {
+            sideData.innerText = "CLOUD-NATIVE CNF (K3s POD)";
+            sideData.className = "status-val highlight-green";
+        }
+    }
+
+    // Update Alert Banner & Transition Message
+    if (modern.is_in_transition) {
+        if (banner) banner.className = "modern-alert-banner in-progress";
+        if (bannerIcon) bannerIcon.innerHTML = `<span class="step-spinner">⚙</span>`;
+        if (bannerText) bannerText.innerText = modern.transition_message || "Modernization transition in progress...";
+        if (bannerProg) bannerProg.innerText = `[${modern.progress_pct || 50}%]`;
+        if (transMsg) transMsg.innerText = modern.transition_message || "Processing...";
+        if (completedMsg) completedMsg.innerText = "";
+    } else {
+        if (banner) banner.className = "modern-alert-banner completed";
+        if (bannerIcon) bannerIcon.innerHTML = `✓`;
+        if (bannerText) bannerText.innerText = modern.completion_message || "Stage Operational.";
+        if (bannerProg) bannerProg.innerText = modern.last_completed_at ? `[${modern.last_completed_at}]` : "[ONLINE]";
+        if (transMsg) transMsg.innerText = "";
+        if (completedMsg) completedMsg.innerText = modern.completion_message ? `✓ ${modern.completion_message}` : "";
+    }
+
+    // Trigger flash animation if new stage just completed
+    const justCompleted = (modern.completed_stage && modern.completed_stage !== lastKnownCompletedStage && !modern.is_in_transition);
+    if (justCompleted) {
+        lastKnownCompletedStage = modern.completed_stage;
+    }
+
+    // Update 4 Stage Cards based on backend stage_statuses or stage_number
+    const statuses = modern.stage_statuses || {};
+    const curStage = modern.stage_number || 1;
+    const targetStage = modern.target_stage_number || curStage;
+
+    for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`step-card-${i}`);
+        const statusEl = document.getElementById(`step-${i}-status`);
+        const badgeEl = document.getElementById(`step-${i}-badge`);
+        const progEl = document.getElementById(`step-${i}-progress`);
+        const progFill = document.getElementById(`step-${i}-progress-fill`);
+        const detailEl = document.getElementById(`step-${i}-detail`);
+        const conn = document.getElementById(`step-conn-${i}`);
+
+        if (!card) continue;
+
+        const st = statuses[String(i)] || (i < curStage ? "SETUP_COMPLETED" : (i === curStage ? "ACTIVE" : "PENDING"));
+
+        card.className = "step-card";
+
+        if (modern.is_in_transition && i === targetStage) {
+            // Actively setting up stage
+            card.classList.add("in-progress");
+            if (statusEl) {
+                const actionVerb = (i === 4) ? "CUTTING OVER" : (i === 2 ? "BOOTSTRAPPING" : (i === 3 ? "STAGING" : "RESETTING"));
+                statusEl.innerHTML = `<span class="step-spinner">⚙</span> ${actionVerb} (${modern.progress_pct || 40}%)...`;
+            }
+            if (badgeEl) badgeEl.style.display = "none";
+            if (progEl) progEl.style.display = "block";
+            if (progFill) progFill.style.width = `${modern.progress_pct || 40}%`;
+            if (detailEl) detailEl.innerText = modern.transition_message || "Executing setup...";
+        } else if (st === "SETUP_COMPLETED") {
+            // Stage completed setup
+            card.classList.add("setup-completed");
+            if (justCompleted && i === modern.completed_stage) {
+                card.classList.add("completed-flash");
+            }
+            if (statusEl) {
+                if (i === 1) statusEl.innerText = "ACTIVE (DAY 0)";
+                else if (i === 2) statusEl.innerText = "✓ NODE READY";
+                else if (i === 3) statusEl.innerText = "✓ REGISTRY READY";
+                else if (i === 4) statusEl.innerText = "✓ CNF OPERATIONAL";
+                else statusEl.innerText = "✓ SETUP COMPLETED";
+            }
+            if (badgeEl) {
+                badgeEl.style.display = "inline-flex";
+                badgeEl.innerText = (i === 4) ? "✓ ACTIVE CNF" : (i === 3 ? "✓ STAGED" : (i === 2 ? "✓ READY" : "✓ COMPLETED"));
+            }
+            if (progEl) progEl.style.display = "none";
+            if (detailEl) {
+                if (i === 2) detailEl.innerText = "K3s Node Ready • Dataplane Intact";
+                else if (i === 3) detailEl.innerText = "Seed Registry Online • Staged";
+                else if (i === 4) detailEl.innerText = "Dynamic SLA Steering Active (0ms Loss)";
+            }
+        } else if (st === "ACTIVE") {
+            // Active Day 0 legacy baseline
+            card.classList.add("current");
+            if (statusEl) statusEl.innerText = (i === 1) ? "ACTIVE (DAY 0)" : "OPERATIONAL";
+            if (badgeEl) {
+                badgeEl.style.display = "inline-flex";
+                badgeEl.innerText = (i === 1) ? "✓ DAY 0 ACTIVE" : "✓ ACTIVE";
+            }
+            if (progEl) progEl.style.display = "none";
+            if (detailEl && i === 1) detailEl.innerText = "Static Metric Dataplane";
+        } else if (st === "RETIRED") {
+            // Retired legacy stage
+            card.classList.add("retired");
+            if (statusEl) statusEl.innerText = "RETIRED";
+            if (badgeEl) badgeEl.style.display = "none";
+            if (progEl) progEl.style.display = "none";
+            if (detailEl && i === 1) detailEl.innerText = "Decommissioned Legacy VNF";
+        } else if (st === "READY") {
+            // Ready for next action
+            card.classList.add("ready-next");
+            if (statusEl) statusEl.innerText = (i === 3) ? "READY TO STAGE" : "READY FOR CUTOVER";
+            if (badgeEl) badgeEl.style.display = "none";
+            if (progEl) progEl.style.display = "none";
+            if (detailEl) detailEl.innerText = "Awaiting operator trigger";
+        } else {
+            // Pending future stage
+            if (statusEl) statusEl.innerText = "PENDING";
+            if (badgeEl) badgeEl.style.display = "none";
+            if (progEl) progEl.style.display = "none";
+            if (detailEl) detailEl.innerText = "Awaiting prior stages";
+        }
+
+        // Connector lines
+        if (conn) {
+            if (i < curStage || (statuses[String(i)] === "SETUP_COMPLETED" && statuses[String(i + 1)] !== "PENDING")) {
+                conn.classList.add("active");
+            } else {
+                conn.classList.remove("active");
+            }
+        }
+    }
+
+    // Toggle button disabled state and highlight recommended next action
+    const buttons = document.querySelectorAll(".modern-btn");
+    buttons.forEach(b => {
+        b.disabled = modern.is_in_transition;
+        b.classList.remove("btn-recommended");
+    });
+
+    if (!modern.is_in_transition) {
+        if (curStage === 1) {
+            const btn = document.getElementById("btn-step-k3s");
+            if (btn) btn.classList.add("btn-recommended");
+        } else if (curStage === 2) {
+            const btn = document.getElementById("btn-step-zarf");
+            if (btn) btn.classList.add("btn-recommended");
+        } else if (curStage === 3) {
+            const btn = document.getElementById("btn-step-cutover");
+            if (btn) btn.classList.add("btn-recommended");
+        } else if (curStage === 4) {
+            const btn = document.getElementById("btn-step-reset");
+            if (btn) btn.classList.add("btn-recommended");
+        }
+    }
+}
+
+// ============================================================================
+// DOCKED MISSION CONTROL SIDEBAR CONTROLLER (UPGRADE, CHAOS, LOGS)
+// ============================================================================
+let sidebarOpen = false;
+let currentSidebarTab = "upgrade"; // 'upgrade' | 'chaos' | 'logs'
+let logPollTimer = null;
+let currentSourceFilter = "ALL";
+let currentSearchQuery = "";
+let autoScrollEnabled = true;
+let cachedLogs = [];
+let latestLogId = 0;
+
+function toggleSidebar(tab) {
+    if (sidebarOpen && (!tab || tab === currentSidebarTab)) {
+        closeSidebar();
+    } else {
+        openSidebar(tab || currentSidebarTab);
+    }
+}
+
+function openSidebar(tab) {
+    sidebarOpen = true;
+    document.body.classList.add("sidebar-open");
+    const sidebar = document.getElementById("hud-sidebar");
+    if (sidebar) sidebar.classList.add("open");
+
+    if (tab) {
+        switchSidebarTab(tab);
+    }
+
+    triggerLayoutResize();
+
+    // If active tab is logs, poll at 1s interval
+    if (currentSidebarTab === "logs") {
+        fetchBackendLogs();
+        if (logPollTimer) clearInterval(logPollTimer);
+        logPollTimer = setInterval(fetchBackendLogs, 1000);
+    }
+}
+
+function closeSidebar() {
+    sidebarOpen = false;
+    document.body.classList.remove("sidebar-open");
+    const sidebar = document.getElementById("hud-sidebar");
+    if (sidebar) sidebar.classList.remove("open");
+
+    triggerLayoutResize();
+
+    // Slower 5-second polling when collapsed
+    if (logPollTimer) clearInterval(logPollTimer);
+    logPollTimer = setInterval(fetchBackendLogs, 5000);
+}
+
+function switchSidebarTab(tab) {
+    currentSidebarTab = tab || "upgrade";
+
+    if (!sidebarOpen) {
+        sidebarOpen = true;
+        document.body.classList.add("sidebar-open");
+        const sidebar = document.getElementById("hud-sidebar");
+        if (sidebar) sidebar.classList.add("open");
+        triggerLayoutResize();
+    }
+
+    // Toggle tab navigation buttons and body panels
+    const tabs = ["upgrade", "chaos", "logs"];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const panel = document.getElementById(`panel-${t}`);
+        if (btn) {
+            if (t === currentSidebarTab) btn.classList.add("active");
+            else btn.classList.remove("active");
+        }
+        if (panel) {
+            if (t === currentSidebarTab) panel.classList.add("active");
+            else panel.classList.remove("active");
+        }
+    });
+
+    if (currentSidebarTab === "logs") {
+        fetchBackendLogs();
+        if (logPollTimer) clearInterval(logPollTimer);
+        logPollTimer = setInterval(fetchBackendLogs, 1000);
+    } else {
+        if (logPollTimer) clearInterval(logPollTimer);
+        logPollTimer = setInterval(fetchBackendLogs, 5000);
+    }
+}
+
+function triggerLayoutResize() {
+    window.dispatchEvent(new Event("resize"));
+    setTimeout(() => {
+        drawTopology();
+        drawThroughputChart();
+    }, 50);
+    setTimeout(() => {
+        drawTopology();
+        drawThroughputChart();
+    }, 360);
+}
+
+// Global hotkeys:
+// 'U' or '1' -> Upgrade tab
+// 'C' or '2' -> Chaos tab
+// 'L' or '3' -> Logs tab
+// 'Escape' -> Close sidebar
+window.addEventListener("keydown", (e) => {
+    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+
+    if (e.key === "Escape" && sidebarOpen) {
+        closeSidebar();
+    } else if (e.key === "u" || e.key === "U" || e.key === "1") {
+        toggleSidebar("upgrade");
+    } else if (e.key === "c" || e.key === "C" || e.key === "2") {
+        toggleSidebar("chaos");
+    } else if (e.key === "l" || e.key === "L" || e.key === "3") {
+        toggleSidebar("logs");
+    }
+});
+
+async function fetchBackendLogs() {
+    try {
+        const resp = await fetch("/api/logs?tail=300&t=" + Date.now());
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const logs = data.logs || [];
+        cachedLogs = logs;
+        latestLogId = data.latest_id || 0;
+
+        // Update badge counts across all UI surfaces
+        const headerBadge = document.getElementById("header-log-badge");
+        const floatingBadge = document.getElementById("floating-log-badge");
+        const sidebarTabBadge = document.getElementById("sidebar-tab-log-badge");
+        const countTotal = document.getElementById("log-count-total");
+        const totalCount = data.total_count || logs.length;
+
+        if (headerBadge) headerBadge.innerText = totalCount;
+        if (floatingBadge) floatingBadge.innerText = totalCount;
+        if (sidebarTabBadge) sidebarTabBadge.innerText = totalCount;
+        if (countTotal) countTotal.innerText = totalCount;
+
+        if (sidebarOpen && currentSidebarTab === "logs") {
+            renderLogTerminal();
+        }
+    } catch (err) {
+        console.debug("Log fetch error:", err);
+    }
+}
+
+function renderLogTerminal() {
+    const terminalContent = document.getElementById("drawer-terminal-content");
+    const filteredCountEl = document.getElementById("log-count-filtered");
+    const terminal = document.getElementById("log-drawer-terminal");
+    if (!terminalContent) return;
+
+    let filtered = cachedLogs;
+
+    // Filter by source
+    if (currentSourceFilter && currentSourceFilter !== "ALL") {
+        filtered = filtered.filter(item => (item.source || "").toUpperCase() === currentSourceFilter);
+    }
+
+    // Filter by search query
+    if (currentSearchQuery) {
+        const q = currentSearchQuery.toLowerCase();
+        filtered = filtered.filter(item => 
+            (item.message || "").toLowerCase().includes(q) ||
+            (item.source || "").toLowerCase().includes(q) ||
+            (item.level || "").toLowerCase().includes(q)
+        );
+    }
+
+    if (filteredCountEl) filteredCountEl.innerText = filtered.length;
+
+    if (filtered.length === 0) {
+        terminalContent.innerHTML = `
+            <div class="log-entry log-info" style="opacity: 0.6; padding: 12px 0;">
+                <span class="log-msg">No log entries matching filter (${currentSourceFilter})</span>
+            </div>
+        `;
+        return;
+    }
+
+    const html = filtered.map(item => {
+        const lvl = (item.level || "INFO").toLowerCase();
+        const timeStr = item.time_str || "--:--:--Z";
+        const src = item.source || "SYS";
+        const msg = escapeHtml(item.message || "");
+        return `
+            <div class="log-entry log-${lvl}">
+                <span class="log-time">[${timeStr}]</span>
+                <span class="log-source">[${src}]</span>
+                <span class="log-level">[${item.level || 'INFO'}]</span>
+                <span class="log-msg">${msg}</span>
+            </div>
+        `;
+    }).join("");
+
+    terminalContent.innerHTML = html;
+
+    if (autoScrollEnabled && terminal) {
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+}
+
+function setLogSourceFilter(filter) {
+    currentSourceFilter = filter.toUpperCase();
+    const pills = document.querySelectorAll("#log-filter-pills .pill");
+    pills.forEach(p => {
+        if (p.getAttribute("data-filter") === currentSourceFilter) {
+            p.classList.add("active");
+        } else {
+            p.classList.remove("active");
+        }
+    });
+    renderLogTerminal();
+}
+
+function onLogSearchInput() {
+    const input = document.getElementById("log-search-input");
+    currentSearchQuery = (input ? input.value : "").trim();
+    renderLogTerminal();
+}
+
+function toggleAutoScroll(enabled) {
+    autoScrollEnabled = Boolean(enabled);
+}
+
+async function clearLogsOnServer() {
+    try {
+        await fetch("/api/logs/clear", { method: "POST" });
+        cachedLogs = [];
+        renderLogTerminal();
+        fetchBackendLogs();
+    } catch (err) {
+        console.error("Failed to clear logs:", err);
+    }
+}
+
+function copyLogsToClipboard() {
+    if (!cachedLogs || cachedLogs.length === 0) return;
+    const text = cachedLogs.map(item => `[${item.time_str || ''}] [${item.source || ''}] [${item.level || ''}] ${item.message || ''}`).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+        const copyBtn = document.getElementById("btn-copy-logs");
+        if (copyBtn) {
+            const orig = copyBtn.innerText;
+            copyBtn.innerText = "✓ COPIED!";
+            setTimeout(() => { copyBtn.innerText = orig; }, 1500);
+        }
+    }).catch(err => {
+        console.error("Clipboard copy failed:", err);
+    });
+}
+
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Initialization on Page Load
 window.addEventListener("DOMContentLoaded", () => {
     // Initial draw
@@ -569,4 +1146,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Start SSE Telemetry
     startSSE();
+
+    // Initial backend log fetch & background badge polling (5s)
+    fetchBackendLogs();
+    if (logPollTimer) clearInterval(logPollTimer);
+    logPollTimer = setInterval(fetchBackendLogs, 5000);
 });

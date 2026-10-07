@@ -33,8 +33,9 @@ RUN chown -R frr:frr /etc/frr && chmod 640 /etc/frr/*
 # Copy application source code and documentation/benchmark data
 COPY src/ /app/src/
 COPY docs/ /app/docs/
+COPY scripts/ /app/scripts/
 COPY src/dataplane/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chmod +x /app/scripts/*.sh 2>/dev/null || true
 
 EXPOSE 8080 51820/udp 51821/udp 51822/udp 179
 

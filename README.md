@@ -96,6 +96,7 @@ flowchart TD
   - [ADR 0004: Automated Continuous Compliance via Lula & OSCAL](docs/adr/0004-automated-continuous-compliance-lula.md)
   - [ADR 0005: Agentic AI Workflow and Chaos / DDIL Testing](docs/adr/0005-agentic-ai-workflow-and-chaos-testing.md)
   - [ADR 0006: Helm-Based Configuration Management for Air-Gapped Zarf Deployment](docs/adr/0006-helm-chart-templating-and-zarf-packaging.md)
+  - [ADR 0007: Operations HUD Modernization Lifecycle & Interactive Gateway Control](docs/adr/0007-interactive-modernization-dashboard-lifecycle.md)
 * **[Strategic Project Overview](overview.md):** Defense networking challenges, Project Overmatch alignment, and architectural problem framing.
 
 ---
@@ -104,9 +105,10 @@ flowchart TD
 
 ```
 ├── compliance/
-│   └── lula/                  # Lula OSCAL component definitions, STIG validations, assessment results
+│   ├── lula/                  # Lula OSCAL component definitions, STIG validations, assessment results
+│   └── sbom/                  # Software Bill of Materials (CycloneDX & SPDX 2.3 JSON)
 ├── docs/
-│   ├── adr/                   # Architecture Decision Records (ADRs 0001-0006)
+│   ├── adr/                   # Architecture Decision Records (ADRs 0001-0007)
 │   ├── architecture/          # Legacy vs. Modern SDN comparison & demonstration guide
 │   ├── benchmarks/            # Quantitative chaos resiliency reports and telemetry JSON
 │   └── milestones/            # Project milestones (Milestones 1-5) and validation criteria
