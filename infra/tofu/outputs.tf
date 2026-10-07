@@ -29,7 +29,7 @@ output "ssh_config" {
   description = "OpenSSH client configuration block for the ephemeral lab VMs"
   value       = <<-EOT
     # Tactical Edge SDN - Ephemeral Nested Lab VMs
-    Host legacy-router 10.200.1.2
+    Host ship-gateway legacy-router 10.200.1.2
         HostName 10.200.1.2
         User ${var.admin_username}
         ProxyJump ${var.hypervisor_ssh_host}
@@ -48,7 +48,7 @@ output "ssh_config" {
     Host enclave-client 10.10.1.10
         HostName 10.10.1.10
         User ${var.admin_username}
-        ProxyJump legacy-router
+        ProxyJump ship-gateway
         IdentityFile ${var.ssh_private_key_path}
         UserKnownHostsFile ~/.ssh/known_hosts_tactical_lab
         StrictHostKeyChecking accept-new

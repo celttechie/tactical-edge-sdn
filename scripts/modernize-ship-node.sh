@@ -92,13 +92,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now k3s.service
 
 echo "==> Waiting for K3s node ready..."
-for i in {1..30}; do
-    if sudo k3s kubectl get nodes 2>/dev/null | grep -q " Ready"; then
-        echo "==> K3s node is Ready!"
-        break
-    fi
-    sleep 2
-done
+sudo k3s kubectl wait --for=condition=Ready node --all --timeout=60s
 
 mkdir -p ~/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
@@ -113,6 +107,9 @@ ssh "${SHIP_TARGET}" "bash -s" << 'EOF'
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "==> Initializing Zarf on ship-gateway..."
 zarf init --confirm --components zarf-seed-registry,zarf-registry,zarf-injector
+
+echo "==> Waiting for Zarf seed registry pod readiness..."
+kubectl wait --namespace zarf --for=condition=ready pod --selector=app=docker-registry --timeout=120s
 EOF
 
 echo "==> [Step 5/5] Deploying containerized SD-WAN CNF via Zarf on ${SHIP_TARGET}..."
@@ -121,10 +118,13 @@ ssh "${SHIP_TARGET}" "bash -s" << EOF
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "==> Deploying ${REMOTE_PKG}..."
 zarf package deploy ${REMOTE_PKG} --confirm
+
+echo "==> Waiting for Tactical SDN CNF DaemonSet pod readiness..."
+kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn --timeout=60s
 EOF
 
 echo ""
 echo "======================================================================"
 echo "  [SUCCESS] ${SHIP_TARGET} successfully modernized to Cloud-Native CNF!"
 echo "======================================================================"
-ssh "${SHIP_TARGET}" "sudo k3s kubectl get pods -n tactical-sdn -o wide"
+"${REPO_ROOT}/scripts/verify-ship-modernization.sh" "${SHIP_TARGET}"
