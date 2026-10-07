@@ -101,8 +101,13 @@ for vm in "ship-gateway 10.200.1.2 ${HYPERVISOR_HOST}" "shore-gateway 10.200.1.1
     ip_addr=$(echo "$vm" | awk '{print $2}')
     proxy_target=$(echo "$vm" | awk '{print $3}')
     
+    extra_alias=""
+    if [ "$alias_name" = "ship-gateway" ]; then
+        extra_alias=" legacy-router"
+    fi
+
     cat << EOF >> /tmp/tactical_sdn_ssh_block.tmp
-Host ${alias_name} ${ip_addr}
+Host ${alias_name}${extra_alias} ${ip_addr}
     HostName ${ip_addr}
     User ${VM_USER}
     ProxyJump ${proxy_target}

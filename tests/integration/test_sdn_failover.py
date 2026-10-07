@@ -16,7 +16,8 @@ import json
 import sys
 from datetime import datetime
 
-SSH_ROUTER_CMD = ["ssh", "legacy-router"]
+# Router SSH connection target (uses ~/.ssh/config alias ship-gateway)
+SSH_ROUTER_CMD = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "ship-gateway"]
 
 def run_cmd(cmd, check=True):
     if isinstance(cmd, str):
@@ -69,9 +70,11 @@ def test_sdn_dynamic_steering():
     print("\n[Step 1] Resetting link impairments to clean state...")
     run_cmd("bash ./tests/chaos/impair-bearer.sh restore-all")
 
-    # 2. Restart and ensure SD-WAN Controller is active on the router
-    print("\n[Step 2] Ensuring SD-WAN Policy Controller service is running on router...")
-    exec_on_router("sudo systemctl restart sdwan-controller.service")
+    # 2. Ensure SD-WAN Controller is active on the router (CNF pod or systemd service)
+    print("\n[Step 2] Ensuring SD-WAN Policy Controller is active on router...")
+    chk = exec_on_router("sudo k3s kubectl get pods -n tactical-sdn 2>/dev/null | grep Running || systemctl is-active sdwan-controller.service || true")
+    if "Running" not in chk and "active" not in chk:
+        exec_on_router("sudo systemctl restart sdwan-controller.service")
     time.sleep(3)
 
     # 3. Apply baseline tactical latency profiles
