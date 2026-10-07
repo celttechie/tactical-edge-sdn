@@ -92,7 +92,7 @@ class TestZarfAirGapPackage(unittest.TestCase):
         
         # Verify DaemonSet / Pod in tactical-sdn namespace
         k_res = subprocess.run(
-            ["kubectl", "get", "pods", "-n", "tactical-sdn", "-l", "app.kubernetes.io/name=tactical-sdn-stack", "-o", "json"],
+            ["kubectl", "get", "pods", "-n", "tactical-sdn", "-l", "app.kubernetes.io/name=tactical-sdn", "-o", "json"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True

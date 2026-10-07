@@ -1,7 +1,6 @@
-uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
-name: sc-7-validation
-title: sc-7-validation
-description: Boundary Protection and Network Separation Validation
+metadata:
+  name: sc-7-validation
+  uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
 domain:
   type: kubernetes
   kubernetes-spec:
@@ -20,6 +19,6 @@ provider:
 
       validate {
         ds := input.sdn_daemonset[_]
-        ds.metadata.name == "tactical-sdn-stack"
+        ds.metadata.name == "tactical-sdn"
         ds.status.numberReady > 0
       }

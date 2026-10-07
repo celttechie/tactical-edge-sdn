@@ -216,7 +216,92 @@
             </div>
         </section>
 
-        <!-- SECTION 4: Interactive DDIL Chaos Warfare Console & Event Log -->
+        <!-- SECTION 4: Quantitative DDIL Resiliency & Convergence Benchmarks -->
+        <section class="hud-panel benchmark-panel">
+            <div class="panel-header">
+                <h2><span class="icon">⚡</span> QUANTITATIVE DDIL RESILIENCY & CONVERGENCE BENCHMARKS</h2>
+                <div class="benchmark-header-actions">
+                    <span class="benchmark-compliance-pill">NIST SP 800-53 // MIL-STD-188-164</span>
+                    <button class="benchmark-run-btn" id="run-benchmark-btn" onclick="triggerBenchmark()">
+                        <span class="btn-icon">▶</span> RUN BENCHMARK SUITE
+                    </button>
+                </div>
+            </div>
+            
+            <div class="benchmark-kpi-row">
+                <div class="benchmark-kpi-card">
+                    <div class="kpi-label">MEAN TIME-TO-DETECT (MTTD)</div>
+                    <div class="kpi-value highlight-cyan" id="bench-mttd">4,120 <span class="unit">ms</span></div>
+                    <div class="kpi-target">Threshold: &lt; 6,000 ms (Satisfied)</div>
+                </div>
+                <div class="benchmark-kpi-card">
+                    <div class="kpi-label">KERNEL CUTOVER / REROUTE</div>
+                    <div class="kpi-value highlight-green" id="bench-cutover">1,140 <span class="unit">ms</span></div>
+                    <div class="kpi-target">Dynamic Metric Penalty + Conntrack Preserve</div>
+                </div>
+                <div class="benchmark-kpi-card">
+                    <div class="kpi-label">IN-FLIGHT PACKET SURVIVAL</div>
+                    <div class="kpi-value highlight-green" id="bench-survival">99.2 <span class="unit">%</span></div>
+                    <div class="kpi-target">0 Sockets Dropped / Resets</div>
+                </div>
+                <div class="benchmark-kpi-card">
+                    <div class="kpi-label">DISA STIG / OSCAL COMPLIANCE</div>
+                    <div class="kpi-value highlight-cyan" id="bench-compliance">100% (4/4)</div>
+                    <div class="kpi-target">SC-7, AC-3, SI-4, CM-6 Passed</div>
+                </div>
+            </div>
+
+            <div class="benchmark-table-wrapper">
+                <table class="benchmark-table">
+                    <thead>
+                        <tr>
+                            <th>CHAOS SCENARIO</th>
+                            <th>TARGET BEARER</th>
+                            <th>INJECTED IMPAIRMENT</th>
+                            <th>TIME-TO-DETECT</th>
+                            <th>CUTOVER LATENCY</th>
+                            <th>PACKET SURVIVAL</th>
+                            <th>PROMOTED ALTERNATE</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="benchmark-tbody">
+                        <tr>
+                            <td><strong>Satellite Rain Fade</strong></td>
+                            <td><span class="bearer-tag tag-pleops">P-LEO SATCOM</span></td>
+                            <td>300ms Delay + 15% Loss</td>
+                            <td id="bench-s1-detect">4,120 ms</td>
+                            <td id="bench-s1-cutover">1,080 ms</td>
+                            <td><span class="highlight-green" id="bench-s1-survival">99.1%</span></td>
+                            <td><span class="bearer-tag tag-milsat" id="bench-s1-alt">MILSATCOM</span></td>
+                            <td><span class="verdict-badge badge-pass" id="bench-s1-status">PASSED</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>RF Electronic Jamming</strong></td>
+                            <td><span class="bearer-tag tag-pleops">P-LEO SATCOM</span></td>
+                            <td>100% Instantaneous Blackout</td>
+                            <td id="bench-s2-detect">4,240 ms</td>
+                            <td id="bench-s2-cutover">1,180 ms</td>
+                            <td><span class="highlight-green" id="bench-s2-survival">98.7%</span></td>
+                            <td><span class="bearer-tag tag-milsat" id="bench-s2-alt">MILSATCOM</span></td>
+                            <td><span class="verdict-badge badge-pass" id="bench-s2-status">PASSED</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Link Flapping Hysteresis</strong></td>
+                            <td><span class="bearer-tag tag-pleops">P-LEO SATCOM</span></td>
+                            <td>Rapid 2s On/Off Cycling</td>
+                            <td id="bench-s3-detect">4,000 ms</td>
+                            <td id="bench-s3-cutover">1,160 ms</td>
+                            <td><span class="highlight-green" id="bench-s3-survival">99.8%</span></td>
+                            <td><span class="bearer-tag tag-pleops" id="bench-s3-alt">P-LEO (Damped)</span></td>
+                            <td><span class="verdict-badge badge-pass" id="bench-s3-status">PASSED</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 5: Interactive DDIL Chaos Warfare Console & Event Log -->
         <div class="bottom-grid">
             
             <!-- Chaos Injection Console -->

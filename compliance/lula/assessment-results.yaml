@@ -2,13 +2,2249 @@ assessment-results:
   import-ap:
     href: ""
   metadata:
-    last-modified: 2026-10-05T13:03:12.767958418-05:00
+    last-modified: 2026-10-06T20:08:13.893784306-05:00
     oscal-version: 1.1.2
     published: 2026-10-05T12:59:43.955920538-05:00
     remarks: Assessment Results generated from Lula
     title: '[System Name] Security Assessment Results (SAR)'
     version: 0.0.1
   results:
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 2b52cbfc-9260-4c20-9696-7156439dbf2a
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 60b731f0-08d2-4528-8474-d060391ac9fe
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 8a7a4367-0153-4b47-93e2-a1b305aca2ca
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 066166ff-51d9-4cdd-85c4-3d94fd380ab1
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 1a345274-fe84-47e7-90db-964dadd55928
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 2482e947-d74d-4f5c-b742-b9d098a8908f
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: dffd3c97-2c87-4af4-bdea-5637575b9a73
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 2774e6f4-796e-4b53-b194-3a7d1551fd5c
+      observations:
+        - collected: 2026-10-06T20:08:13.813931104-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 1a345274-fe84-47e7-90db-964dadd55928
+        - collected: 2026-10-06T20:08:13.819727849-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: dffd3c97-2c87-4af4-bdea-5637575b9a73
+        - collected: 2026-10-06T20:08:13.825170099-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 2b52cbfc-9260-4c20-9696-7156439dbf2a
+        - collected: 2026-10-06T20:08:13.830933955-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 8a7a4367-0153-4b47-93e2-a1b305aca2ca
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T20:08:13.831563508-05:00
+      title: Lula Validation Result
+      uuid: e1908611-475d-40ac-90df-f70c5434b508
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 37826a25-793d-44c3-8fb8-677c5b86a26a
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 80c5ebe0-54f6-4b7e-b807-9d3407a4fc3e
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: e0dff401-9024-4f1c-b59b-2fd70b02798c
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 282f4d11-a460-475d-a2ae-79b747cf4533
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 1ab0b667-9aef-401c-9099-e20ddb377d0b
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: f688830a-0667-49f8-bde7-3669d57dd2d0
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 1fc877af-1ce3-4444-8bbe-352bb7634bb8
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 44a4bd43-ebf0-4c75-8c94-c97212f22262
+      observations:
+        - collected: 2026-10-06T19:53:01.232075843-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: e0dff401-9024-4f1c-b59b-2fd70b02798c
+        - collected: 2026-10-06T19:53:01.236655238-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 1ab0b667-9aef-401c-9099-e20ddb377d0b
+        - collected: 2026-10-06T19:53:01.241325135-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 1fc877af-1ce3-4444-8bbe-352bb7634bb8
+        - collected: 2026-10-06T19:53:01.24687318-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 37826a25-793d-44c3-8fb8-677c5b86a26a
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:53:01.247448767-05:00
+      title: Lula Validation Result
+      uuid: 3e0d4de3-7d63-4a8a-b11a-78633bd2aba5
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 3ef698d3-332d-4c38-8027-4db04a5b8830
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 92b4a53f-f1c7-41e0-948f-faab738914cf
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: c9d7f2fb-4322-4c7e-819e-82b0433952e4
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 1609e1dd-dfad-4579-8b10-575c425d5ac7
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 481cad83-829e-4a44-8fa4-94bae5c76531
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: edaed4b4-9e59-492b-8ee6-975b5e2bcad1
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: b6f5d915-801f-4abd-b275-d1191dba2e1d
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 4f587db1-883c-408c-8ffc-70167371d1f8
+      observations:
+        - collected: 2026-10-06T19:52:27.625953958-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: b6f5d915-801f-4abd-b275-d1191dba2e1d
+        - collected: 2026-10-06T19:52:27.629029891-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 3ef698d3-332d-4c38-8027-4db04a5b8830
+        - collected: 2026-10-06T19:52:27.632223233-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: c9d7f2fb-4322-4c7e-819e-82b0433952e4
+        - collected: 2026-10-06T19:52:27.637009731-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 481cad83-829e-4a44-8fa4-94bae5c76531
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:52:27.637861437-05:00
+      title: Lula Validation Result
+      uuid: 10eafd4e-27af-4a4d-8cfc-892dc03ced4b
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 929e98ce-6359-47fb-a67e-e8a5aa0dae60
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: a51733a0-c6b1-461d-afc2-3da6bace8020
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 09515c5a-a541-4630-a882-501f23817b6c
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 290eee0f-2156-416f-8e1f-103b590d25cf
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 59a79c8d-e660-4f51-9f9d-62167319326f
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 9b215d3e-5309-40be-80b0-19cd08ae13dd
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 91c9b880-0633-453c-888e-2c08d696e617
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: bf5a6df2-39b5-46f8-a413-db035b656c21
+      observations:
+        - collected: 2026-10-06T19:46:36.605993612-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 929e98ce-6359-47fb-a67e-e8a5aa0dae60
+        - collected: 2026-10-06T19:46:36.60886659-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 09515c5a-a541-4630-a882-501f23817b6c
+        - collected: 2026-10-06T19:46:36.6121573-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 59a79c8d-e660-4f51-9f9d-62167319326f
+        - collected: 2026-10-06T19:46:36.614831577-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 91c9b880-0633-453c-888e-2c08d696e617
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:46:36.615219-05:00
+      title: Lula Validation Result
+      uuid: cd3bae94-081e-4235-94e0-9d90dcd55bdc
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 8ac8829a-3dda-41c0-b0f3-8011b150b0e6
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 60254188-79d3-4664-a68a-47458d9d535b
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 6c494430-2346-4478-aa95-279e6337874f
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: a906d925-b2d8-4adf-bd87-a7e529fbf9df
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 675a4009-1cee-434c-b686-a914d142130d
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: d479439d-9bc5-4c03-af6d-f154f3ef47f2
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: ac19a406-f7fd-4f67-b3f0-f825b6ae3fca
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 4aee92b4-88f7-4d5f-abe8-83b631f084df
+      observations:
+        - collected: 2026-10-06T19:46:25.507376978-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 6c494430-2346-4478-aa95-279e6337874f
+        - collected: 2026-10-06T19:46:25.510431992-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 675a4009-1cee-434c-b686-a914d142130d
+        - collected: 2026-10-06T19:46:25.51542431-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: ac19a406-f7fd-4f67-b3f0-f825b6ae3fca
+        - collected: 2026-10-06T19:46:25.519084604-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 8ac8829a-3dda-41c0-b0f3-8011b150b0e6
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:46:25.519335167-05:00
+      title: Lula Validation Result
+      uuid: e64068e2-9742-4cb0-81eb-1e6eaf958fdb
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 6e55fcf6-79f0-4a6b-a358-3558771171ed
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 9c75eceb-30f9-4fcc-93ce-503c53eff1e2
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 4367d9a5-fa82-469f-a4f0-e9d6d9ebffa9
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 2289c519-a7f2-45e3-96e6-9adf7b0dc55b
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 169873b5-b977-47f1-89ea-3077326e6ac8
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: e878034a-64c4-49b1-9c36-122426f7322a
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 6944f376-58b2-42cd-b83c-7d5787e94995
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 5bd8b27a-61dc-47f2-b22f-6faaab96047b
+      observations:
+        - collected: 2026-10-06T19:46:18.247936161-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 6e55fcf6-79f0-4a6b-a358-3558771171ed
+        - collected: 2026-10-06T19:46:18.250914153-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 4367d9a5-fa82-469f-a4f0-e9d6d9ebffa9
+        - collected: 2026-10-06T19:46:18.254126611-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 169873b5-b977-47f1-89ea-3077326e6ac8
+        - collected: 2026-10-06T19:46:18.256969142-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 6944f376-58b2-42cd-b83c-7d5787e94995
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:46:18.25717944-05:00
+      title: Lula Validation Result
+      uuid: da1818d2-4c40-4ee5-aba7-3e46ad231fb9
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: f18c6eec-5073-4e35-9f62-948885e3c0ab
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: cd4b0b16-b5fd-405b-afe7-38c2f57ea97d
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: dd7dc4c4-1a47-4bd9-8b1d-472c58fffab8
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 671ac544-2909-4383-abff-83212f04af21
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 0a01c8a2-6c2b-4c00-a232-adf9903d0bbb
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 959017a4-e688-4316-b814-867601018540
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: f3947382-b700-41af-89ef-fe0c20aaa643
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: bc8671e7-26b4-4f94-ad1b-e3e680b09f08
+      observations:
+        - collected: 2026-10-06T19:00:38.483638601-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: dd7dc4c4-1a47-4bd9-8b1d-472c58fffab8
+        - collected: 2026-10-06T19:00:38.487295823-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 0a01c8a2-6c2b-4c00-a232-adf9903d0bbb
+        - collected: 2026-10-06T19:00:38.490662848-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: f3947382-b700-41af-89ef-fe0c20aaa643
+        - collected: 2026-10-06T19:00:38.494254475-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: f18c6eec-5073-4e35-9f62-948885e3c0ab
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T19:00:38.494493123-05:00
+      title: Lula Validation Result
+      uuid: 7c42c807-c38a-4ef6-9934-e26313204fd7
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 4525b2f6-e2b5-4657-9e2b-de2a9ecc641d
+          target:
+            status:
+              state: satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 5b2f1ec2-5d59-4902-8814-c1c2026280ce
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 84e6f09f-5b0f-4bea-80b5-cd80bfc53209
+          target:
+            status:
+              state: satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 77be0974-db83-454b-a69d-35f392b0083e
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 35876f73-6f8a-4646-8e97-b013c4d7029f
+          target:
+            status:
+              state: satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: a142bdd3-226f-4257-93c9-a0d32a540b28
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 77c30773-d1f9-40ca-b697-f4867e9bf4ed
+          target:
+            status:
+              state: satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 18ffa9a8-5609-48e2-ba75-01411ede9fb5
+      observations:
+        - collected: 2026-10-06T18:59:35.165027253-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - sc-7-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 35876f73-6f8a-4646-8e97-b013c4d7029f
+        - collected: 2026-10-06T18:59:35.168832384-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - si-4-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 77c30773-d1f9-40ca-b697-f4867e9bf4ed
+        - collected: 2026-10-06T18:59:35.172370004-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - ac-3-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 4525b2f6-e2b5-4657-9e2b-de2a9ecc641d
+        - collected: 2026-10-06T18:59:35.176239427-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - cm-6-validation
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: satisfied
+          uuid: 84e6f09f-5b0f-4bea-80b5-cd80bfc53209
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:59:35.176636778-05:00
+      title: Lula Validation Result
+      uuid: 421f3cb2-be61-44f9-a471-2db827916214
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: a493ed7b-57af-4205-977d-1dc77e9edad8
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 41faf908-b66a-4144-a1ed-13cbde674c28
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: eae00d35-f66c-42fd-83c5-3f9d953a4a4c
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 60b52257-8b02-4ab1-8a2f-581db5b3c91f
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 1f676892-83ee-4bc8-8fa9-576e685d8203
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: f081872b-0ff9-4eca-b231-314201e51a17
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 90d953b5-6e71-41cb-81b0-2d6797a5071d
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 9bacff37-93b5-4f5e-b917-c6875be9d35a
+      observations:
+        - collected: 2026-10-06T18:50:48.681275508-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 90d953b5-6e71-41cb-81b0-2d6797a5071d
+        - collected: 2026-10-06T18:50:48.681313617-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: a493ed7b-57af-4205-977d-1dc77e9edad8
+        - collected: 2026-10-06T18:50:48.681341333-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: eae00d35-f66c-42fd-83c5-3f9d953a4a4c
+        - collected: 2026-10-06T18:50:48.681370799-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 1f676892-83ee-4bc8-8fa9-576e685d8203
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:50:48.681895018-05:00
+      title: Lula Validation Result
+      uuid: a1fcd15d-94ad-403a-ad40-b53235cd42d2
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 051aa9b9-f15c-42aa-88d7-6f516f9c3dcb
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 5d2f84bd-2587-43ef-ad21-85a5c58432a1
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 3895967c-6cda-42cd-bcba-493fc7b4a39b
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 1141d57b-4d30-4343-b197-4c2e6ee70f2b
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: e63b0899-8ff5-49ba-a847-8185ccb4d004
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 842f275d-2567-406a-9c71-cf90fb9ae6a9
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: ad00c808-d498-41a4-bfb2-4742c2d63d65
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 252fc1a5-a747-472e-9a29-e84f081a8a78
+      observations:
+        - collected: 2026-10-06T18:50:04.760381972-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: e63b0899-8ff5-49ba-a847-8185ccb4d004
+        - collected: 2026-10-06T18:50:04.760398841-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 051aa9b9-f15c-42aa-88d7-6f516f9c3dcb
+        - collected: 2026-10-06T18:50:04.760411324-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: ad00c808-d498-41a4-bfb2-4742c2d63d65
+        - collected: 2026-10-06T18:50:04.760421767-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 3895967c-6cda-42cd-bcba-493fc7b4a39b
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:50:04.761312933-05:00
+      title: Lula Validation Result
+      uuid: 02964c76-5ea9-45f9-bb9c-9b965b1ee217
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 3e81ee47-18a3-40f3-bc3e-41b35ed86bca
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 5613fbd3-d148-4426-ac4a-e9ac8c2a64b8
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: e938ff13-c610-4f2b-872f-65f2a92ea46b
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 4d313ee4-7796-41c0-b7fb-329de414d1f2
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 172ec331-23e4-4e91-8b34-2d3c909a1d2a
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 7cb4f81a-b0f0-43b1-aafa-c19e7922cd3d
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 83d7b597-c767-44a8-a2da-e84a42b1f54a
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 0e562b95-b895-4085-87f8-57a15f708a1a
+      observations:
+        - collected: 2026-10-06T18:49:25.414305253-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 83d7b597-c767-44a8-a2da-e84a42b1f54a
+        - collected: 2026-10-06T18:49:25.41433185-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: e938ff13-c610-4f2b-872f-65f2a92ea46b
+        - collected: 2026-10-06T18:49:25.414353342-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 172ec331-23e4-4e91-8b34-2d3c909a1d2a
+        - collected: 2026-10-06T18:49:25.414374706-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 3e81ee47-18a3-40f3-bc3e-41b35ed86bca
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:49:25.414767563-05:00
+      title: Lula Validation Result
+      uuid: 1017f20f-6b5b-4465-b959-7c4087eb3f69
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: fcfc3cb2-2708-44ce-b5e6-0ba296f7e4b5
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 2f0b4bb0-be0a-4d3a-8e75-8bc7ab142f52
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 090614c3-732f-4a4f-b262-3bceb44dd95a
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 247351f8-127e-4283-9e3c-ea30896d96f8
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: ca837ba1-41c9-440d-8355-893d6d68b0e9
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: b4387931-abcb-4119-9c3e-97ec42b104dd
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 308f6f44-4c20-490b-8c79-477e234f421d
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: ec93774f-fe41-4630-bd82-d87d3324e92d
+      observations:
+        - collected: 2026-10-06T18:46:24.702729478-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: ca837ba1-41c9-440d-8355-893d6d68b0e9
+        - collected: 2026-10-06T18:46:24.702745328-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 308f6f44-4c20-490b-8c79-477e234f421d
+        - collected: 2026-10-06T18:46:24.702756299-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: fcfc3cb2-2708-44ce-b5e6-0ba296f7e4b5
+        - collected: 2026-10-06T18:46:24.702765779-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 090614c3-732f-4a4f-b262-3bceb44dd95a
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:46:24.702976886-05:00
+      title: Lula Validation Result
+      uuid: 717ac069-f5e1-4de0-97d1-a2cd59c40bb6
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: aa9f38e6-c49e-4031-b0e1-bd1c40310ea6
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 3af96cf4-d780-4d0c-baf6-f3910a9c8c46
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 14807aa8-638e-49a6-a44c-c2b25f5ceeb4
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 198c3864-880f-40de-b710-7802b8d9e8bb
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: c9955169-06db-4b7f-aa2b-567e91787883
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 2ec0d59b-2a1a-49cb-9fc7-1352afd21ddf
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 1b76712c-66a1-4c03-89e6-7dc8b63a1bb0
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: b1e60443-dafe-4270-8d17-1aa82b329208
+      observations:
+        - collected: 2026-10-06T18:45:02.477282252-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: aa9f38e6-c49e-4031-b0e1-bd1c40310ea6
+        - collected: 2026-10-06T18:45:02.477302063-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 14807aa8-638e-49a6-a44c-c2b25f5ceeb4
+        - collected: 2026-10-06T18:45:02.477314215-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: c9955169-06db-4b7f-aa2b-567e91787883
+        - collected: 2026-10-06T18:45:02.477325704-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 1b76712c-66a1-4c03-89e6-7dc8b63a1bb0
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:45:02.477563757-05:00
+      title: Lula Validation Result
+      uuid: 745c712b-cde0-41ea-b779-e82a74e93e6f
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 752e6469-5c35-473d-800d-19f1df5fdce7
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: cffa2e8a-d76b-4ef2-b789-7830989b213d
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 41dd124f-6145-4f3b-92c8-ba58ee0c634c
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: e91e92fd-fd47-40d7-91fd-43eb6d90ac9d
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 03443d0b-dfdf-43c7-9194-eb6acdef6ab6
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 42ed748f-41f6-46e7-a136-7cf9ab6608e9
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 6d7863e8-d40b-4644-9f93-c1aaaa11967b
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: c97094c5-11a2-42bd-890e-185951cdd417
+      observations:
+        - collected: 2026-10-06T18:43:01.10511974-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 03443d0b-dfdf-43c7-9194-eb6acdef6ab6
+        - collected: 2026-10-06T18:43:01.105137673-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 752e6469-5c35-473d-800d-19f1df5fdce7
+        - collected: 2026-10-06T18:43:01.105148879-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 6d7863e8-d40b-4644-9f93-c1aaaa11967b
+        - collected: 2026-10-06T18:43:01.105158784-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 41dd124f-6145-4f3b-92c8-ba58ee0c634c
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:43:01.105404228-05:00
+      title: Lula Validation Result
+      uuid: 2a034c53-6ef2-4f97-8c16-55c2379053a7
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: b3486a8a-36aa-43a5-82e8-66af5a58a680
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: dcedb96e-67a2-422f-b1b4-d90db40c2c09
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 82bd8655-3073-4743-80e0-e707dc3e2299
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 54e42f46-c5a5-4bb4-ad3e-50a157722e36
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 271f6969-bb91-45cd-b208-af94184dd60b
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: c4581e88-00aa-4664-a78c-7214f0632ac9
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 32a315ec-a7fd-475e-a3f0-41f7bc5961d9
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 6d4a693a-1097-4fff-9485-6eaeb1a610d1
+      observations:
+        - collected: 2026-10-06T18:41:06.007344349-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 82bd8655-3073-4743-80e0-e707dc3e2299
+        - collected: 2026-10-06T18:41:06.007361876-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 271f6969-bb91-45cd-b208-af94184dd60b
+        - collected: 2026-10-06T18:41:06.007372769-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: b3486a8a-36aa-43a5-82e8-66af5a58a680
+        - collected: 2026-10-06T18:41:06.007383214-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 32a315ec-a7fd-475e-a3f0-41f7bc5961d9
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:41:06.007606471-05:00
+      title: Lula Validation Result
+      uuid: 95012bfe-bf8d-4752-aacc-d6632a228ea9
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 88b535c8-4735-4986-807e-50b3e92bacd3
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 6188992e-cd98-418a-b091-38c4b6fff296
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: c3be5c7e-d73c-46b7-b236-f8e490822586
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 9ed018be-1973-4596-a4f6-96735df31840
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 3bb34d76-d680-4ab2-aefa-547cdd35c33e
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 7f5cddb8-1741-426d-a11f-313f22e73532
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 1ec2e65d-81b7-4947-ab81-d02cda3eca8f
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 90bd6a75-2457-4615-a771-ac2d21cf88e9
+      observations:
+        - collected: 2026-10-06T18:40:40.108045835-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 3bb34d76-d680-4ab2-aefa-547cdd35c33e
+        - collected: 2026-10-06T18:40:40.10806426-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 88b535c8-4735-4986-807e-50b3e92bacd3
+        - collected: 2026-10-06T18:40:40.10807664-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 1ec2e65d-81b7-4947-ab81-d02cda3eca8f
+        - collected: 2026-10-06T18:40:40.108086534-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: c3be5c7e-d73c-46b7-b236-f8e490822586
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:40:40.10830957-05:00
+      title: Lula Validation Result
+      uuid: 07ce2dde-4fca-444e-b57e-d5bd439e1cac
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: 55097b52-5bdd-479d-a7c5-963c49b70ade
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: e103e805-9c73-45ec-906f-03eda252a967
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 79c39a41-601e-4fac-b029-6f84cd98fd1a
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 63f06c3b-1a19-45d4-bd9e-c48f27289d3d
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: c0989e60-e36f-47da-9e3b-76f83244bad0
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: 7e8f12fd-aa92-41e5-a2ee-4ef0028752ef
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 2e7ceff9-5f2a-41f4-97ee-fc3fa624a1ff
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 381dee00-d621-4b2c-9da3-84033e581f2e
+      observations:
+        - collected: 2026-10-06T18:39:40.316178868-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: validation string is empty
+          uuid: c0989e60-e36f-47da-9e3b-76f83244bad0
+        - collected: 2026-10-06T18:39:40.316194648-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: validation string is empty
+          uuid: 55097b52-5bdd-479d-a7c5-963c49b70ade
+        - collected: 2026-10-06T18:39:40.316204917-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: validation string is empty
+          uuid: 2e7ceff9-5f2a-41f4-97ee-fc3fa624a1ff
+        - collected: 2026-10-06T18:39:40.316213961-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: validation string is empty
+          uuid: 79c39a41-601e-4fac-b029-6f84cd98fd1a
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:39:40.316424619-05:00
+      title: Lula Validation Result
+      uuid: 4ccfe33f-c9a8-40a6-8388-c01f4bad792d
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: e50d2791-fca0-4052-8635-9b951dbe5de2
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 07a8f046-b1db-4851-b93b-6b87719b0ee0
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 2fb2f503-9402-45ec-9560-e452f8feb97f
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 43b3708d-61fc-4e35-b194-85767c3d3261
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 953633bb-2379-4ad9-9486-d1d87332a774
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: fd5354ef-3618-4c7e-909e-dd9724eac022
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: e9b7eac5-957b-4acd-ab87-7d9b2502587c
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: cf75825a-85b3-4bc9-afa7-4abf2b46c720
+      observations:
+        - collected: 2026-10-06T18:38:52.824352969-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 953633bb-2379-4ad9-9486-d1d87332a774
+        - collected: 2026-10-06T18:38:52.824375545-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: e50d2791-fca0-4052-8635-9b951dbe5de2
+        - collected: 2026-10-06T18:38:52.824386676-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: e9b7eac5-957b-4acd-ab87-7d9b2502587c
+        - collected: 2026-10-06T18:38:52.824397205-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 2fb2f503-9402-45ec-9560-e452f8feb97f
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:38:52.824635902-05:00
+      title: Lula Validation Result
+      uuid: 57c764c2-839d-4b37-8bd9-db834b6bdc22
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: da88d1c6-f617-4c72-b554-c1f53e0ec95d
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: 8b082081-8bd9-4a97-b4ef-c1e9c169788c
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 698e8428-e5a9-48e6-9957-984f77667572
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 74fa6751-f9d7-4ce8-8477-77b588e5ef65
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: ace95bdb-1439-4bc2-b121-2ebcc56e1f33
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: d3fdd0e0-9cb0-458c-badf-17f9628c7ed4
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: adf32e47-317e-488b-85dd-302eecdfd4ab
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 104ca355-acf5-4923-902c-c4bff52bdb8b
+      observations:
+        - collected: 2026-10-06T18:37:53.484386106-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: ace95bdb-1439-4bc2-b121-2ebcc56e1f33
+        - collected: 2026-10-06T18:37:53.484403141-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: da88d1c6-f617-4c72-b554-c1f53e0ec95d
+        - collected: 2026-10-06T18:37:53.484415271-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: adf32e47-317e-488b-85dd-302eecdfd4ab
+        - collected: 2026-10-06T18:37:53.484425949-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 698e8428-e5a9-48e6-9957-984f77667572
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:37:53.484647753-05:00
+      title: Lula Validation Result
+      uuid: 56ba0e2f-3bb1-4606-8995-a9cd1144daa3
+    - description: Assessment results for performing Validations with Lula version v0.8.0
+      findings:
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            Access Enforcement and Least Privilege Capabilities
+          related-observations:
+            - observation-uuid: a84fc405-fe91-4d95-828b-a04fe24993e9
+          target:
+            status:
+              state: not-satisfied
+            target-id: ac-3
+            type: objective-id
+          title: 'Validation Result - Control: ac-3'
+          uuid: c9fe3818-fee9-46f3-abb2-b8e1a010e3f2
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            Configuration Settings and Policy Parameters
+          related-observations:
+            - observation-uuid: 73989a1b-05d0-4237-8eed-13e079b3f417
+          target:
+            status:
+              state: not-satisfied
+            target-id: cm-6
+            type: objective-id
+          title: 'Validation Result - Control: cm-6'
+          uuid: 1aa802e2-b3f4-4894-a966-2a1bac24d257
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            Boundary Protection and Network Separation
+          related-observations:
+            - observation-uuid: 7587041f-4faf-48ba-993a-7ed748299b22
+          target:
+            status:
+              state: not-satisfied
+            target-id: sc-7
+            type: objective-id
+          title: 'Validation Result - Control: sc-7'
+          uuid: fb3d384d-bfe2-4498-b86c-24de1bf99e04
+        - description: |
+            Control Implementation: 0dfab2ab-cd51-480e-95d2-be764904defe / Implemented Requirement: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+            Information System Monitoring and Telemetry Service
+          related-observations:
+            - observation-uuid: 745fc8f6-da33-4f46-a7cd-d8fc2e082ae7
+          target:
+            status:
+              state: not-satisfied
+            target-id: si-4
+            type: objective-id
+          title: 'Validation Result - Control: si-4'
+          uuid: 8f6c346c-f564-40e2-b61f-033484889bb3
+      observations:
+        - collected: 2026-10-06T18:35:30.853706967-05:00
+          description: |
+            [TEST]: a93c8860-4430-4f65-9c8f-68faaef48c77 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #a93c8860-4430-4f65-9c8f-68faaef48c77: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 7587041f-4faf-48ba-993a-7ed748299b22
+        - collected: 2026-10-06T18:35:30.853733683-05:00
+          description: |
+            [TEST]: ada6226f-8d7f-4b8c-9bea-90606455e273 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #ada6226f-8d7f-4b8c-9bea-90606455e273: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: a84fc405-fe91-4d95-828b-a04fe24993e9
+        - collected: 2026-10-06T18:35:30.853755459-05:00
+          description: |
+            [TEST]: 50e0667d-80d9-4a3c-9307-a2deed25ffa7 - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #50e0667d-80d9-4a3c-9307-a2deed25ffa7: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 745fc8f6-da33-4f46-a7cd-d8fc2e082ae7
+        - collected: 2026-10-06T18:35:30.853787288-05:00
+          description: |
+            [TEST]: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f - lula-validation-error
+          methods:
+            - TEST
+          relevant-evidence:
+            - description: |
+                Result: not-satisfied
+              remarks: |
+                Error getting Lula validation #8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type common.Validation
+          uuid: 73989a1b-05d0-4237-8eed-13e079b3f417
+      props:
+        - name: threshold
+          ns: https://docs.lula.dev/oscal/ns
+          value: "false"
+        - name: target
+          ns: https://docs.lula.dev/oscal/ns
+          value: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+      reviewed-controls:
+        control-selections:
+          - description: Controls Assessed by Lula
+            include-controls:
+              - control-id: ac-3
+              - control-id: cm-6
+              - control-id: sc-7
+              - control-id: si-4
+        description: Controls validated
+        remarks: Validation performed may indicate full or partial satisfaction
+      start: 2026-10-06T18:35:30.855351425-05:00
+      title: Lula Validation Result
+      uuid: bd3065e1-1f6f-4bef-91d7-005041cfaa98
     - description: Assessment results for performing Validations with Lula version v0.8.0
       findings:
         - description: |
@@ -239,4 +2475,4 @@ assessment-results:
       start: 2026-10-05T12:59:43.955917312-05:00
       title: Lula Validation Result
       uuid: 513ae5c0-7b68-49c1-842e-47b50cd68fcc
-  uuid: 9900b80e-79fb-464b-9cc9-5a4d778d91fb
+  uuid: fc843a6e-5b1c-48fe-9151-59ad4c1e42c9

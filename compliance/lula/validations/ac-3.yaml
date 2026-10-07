@@ -1,7 +1,6 @@
-uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
-name: ac-3-validation
-title: ac-3-validation
-description: Access Enforcement and Least Privilege Capabilities Validation
+metadata:
+  name: ac-3-validation
+  uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
 domain:
   type: kubernetes
   kubernetes-spec:

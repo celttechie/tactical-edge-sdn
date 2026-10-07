@@ -30,8 +30,9 @@ COPY src/dataplane/frr/daemons /etc/frr/daemons
 COPY src/dataplane/frr/frr.conf /etc/frr/frr.conf
 RUN chown -R frr:frr /etc/frr && chmod 640 /etc/frr/*
 
-# Copy application source code
+# Copy application source code and documentation/benchmark data
 COPY src/ /app/src/
+COPY docs/ /app/docs/
 COPY src/dataplane/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

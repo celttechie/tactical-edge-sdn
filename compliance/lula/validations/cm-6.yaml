@@ -1,7 +1,6 @@
-uuid: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f
-name: cm-6-validation
-title: cm-6-validation
-description: Configuration Settings and Policy Parameters Validation
+metadata:
+  name: cm-6-validation
+  uuid: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f
 domain:
   type: kubernetes
   kubernetes-spec:
@@ -20,7 +19,7 @@ provider:
 
       validate {
         cm := input.sdn_configmap[_]
-        cm.metadata.name == "sdn-controller-config"
+        cm.metadata.name == "tactical-sdn-config"
         contains(cm.data["config.yaml"], "pleops")
         contains(cm.data["config.yaml"], "milsat")
         contains(cm.data["config.yaml"], "losrf")

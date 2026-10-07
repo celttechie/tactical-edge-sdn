@@ -1,67 +1,178 @@
 component-definition:
-  uuid: ef4e942c-1998-46d7-a5c0-d91298caa521
-  metadata:
-    title: Tactical Edge SDN Dataplane and Policy Controller Component Definition
-    last-modified: "2026-10-05T12:00:00Z"
-    version: "0.3.0"
-    oscal-version: "1.1.2"
-    parties:
-      - uuid: a1051832-c39f-4136-8ab6-f6128faaa9d7
-        type: organization
-        name: Tactical Edge Communications Modernization Team
-  components:
-    - uuid: 3d8a85fc-3087-422b-a139-37a49465be3b
-      type: software
-      title: tactical-sdn-stack
-      description: Cloud-Native Containerized SD-WAN Dataplane and Dynamic SLA Policy Controller
-      purpose: Automated dynamic multi-bearer routing and traffic steering across contested DDIL environments
-      control-implementations:
-        - uuid: 0dfab2ab-cd51-480e-95d2-be764904defe
-          source: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
-          description: NIST SP 800-53 Rev 5 Control Implementations for Tactical SD-WAN Stack
-          implemented-requirements:
-            - uuid: 3c744348-c2e7-48f1-a822-4cda54fc0845
-              control-id: sc-7
-              description: Boundary Protection and Network Separation
-              links:
-                - href: "#a93c8860-4430-4f65-9c8f-68faaef48c77"
-                  rel: lula
-            - uuid: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
-              control-id: ac-3
-              description: Access Enforcement and Least Privilege Capabilities
-              links:
-                - href: "#ada6226f-8d7f-4b8c-9bea-90606455e273"
-                  rel: lula
-            - uuid: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
-              control-id: si-4
-              description: Information System Monitoring and Telemetry Service
-              links:
-                - href: "#50e0667d-80d9-4a3c-9307-a2deed25ffa7"
-                  rel: lula
-            - uuid: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
-              control-id: cm-6
-              description: Configuration Settings and Policy Parameters
-              links:
-                - href: "#8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f"
-                  rel: lula
   back-matter:
     resources:
-      - uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
-        title: sc-7-validation
-        description: Validates that the tactical SDN dataplane daemonset is deployed and active in the isolated namespace
-        remarks: '{"domain":{"type":"kubernetes","kubernetes-spec":{"resources":[{"name":"sdn_daemonset","resource-rule":{"group":"apps","version":"v1","resource":"daemonsets","namespaces":["tactical-sdn"]}}]}},"provider":{"type":"opa","opa-spec":{"rego":"package validate\n\nvalidate {\n  ds := input.sdn_daemonset[0]\n  ds.status.numberReady > 0\n}\n"}}}'
+      - description: |
+          domain:
+            kubernetes-spec:
+              create-resources: null
+              resources:
+              - description: ""
+                name: sdn_daemonset
+                resource-rule:
+                  group: apps
+                  name: ""
+                  namespaces:
+                  - tactical-sdn
+                  resource: daemonsets
+                  version: v1
+            type: kubernetes
+          lula-version: ""
+          metadata:
+            name: ac-3-validation
+            uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
+          provider:
+            opa-spec:
+              rego: |
+                package validate
 
-      - uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
+                validate {
+                  ds := input.sdn_daemonset[0]
+                  container := ds.spec.template.spec.containers[0]
+                  container.securityContext.capabilities.add[_] == "NET_ADMIN"
+                }
+            type: opa
         title: ac-3-validation
-        description: Validates container security context enforces explicit NET_ADMIN capability assignment
-        remarks: '{"domain":{"type":"kubernetes","kubernetes-spec":{"resources":[{"name":"sdn_daemonset","resource-rule":{"group":"apps","version":"v1","resource":"daemonsets","namespaces":["tactical-sdn"]}}]}},"provider":{"type":"opa","opa-spec":{"rego":"package validate\n\nvalidate {\n  ds := input.sdn_daemonset[0]\n  container := ds.spec.template.spec.containers[0]\n  container.securityContext.capabilities.add[_] == \"NET_ADMIN\"\n}\n"}}}'
+        uuid: ada6226f-8d7f-4b8c-9bea-90606455e273
+      - description: |
+          domain:
+            kubernetes-spec:
+              create-resources: null
+              resources:
+              - description: ""
+                name: sdn_configmap
+                resource-rule:
+                  group: ""
+                  name: ""
+                  namespaces:
+                  - tactical-sdn
+                  resource: configmaps
+                  version: v1
+            type: kubernetes
+          lula-version: ""
+          metadata:
+            name: cm-6-validation
+            uuid: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f
+          provider:
+            opa-spec:
+              rego: |
+                package validate
 
-      - uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
-        title: si-4-validation
-        description: Validates that the SD-WAN telemetry service is operational and exposing port 8080
-        remarks: '{"domain":{"type":"kubernetes","kubernetes-spec":{"resources":[{"name":"sdn_service","resource-rule":{"group":"","version":"v1","resource":"services","namespaces":["tactical-sdn"]}}]}},"provider":{"type":"opa","opa-spec":{"rego":"package validate\n\nvalidate {\n  svc := input.sdn_service[0]\n  svc.metadata.name == \"sdn-telemetry\"\n  svc.spec.ports[0].port == 8080\n}\n"}}}'
-
-      - uuid: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f
+                validate {
+                  cm := input.sdn_configmap[_]
+                  cm.metadata.name == "tactical-sdn-config"
+                  contains(cm.data["config.yaml"], "pleops")
+                  contains(cm.data["config.yaml"], "milsat")
+                  contains(cm.data["config.yaml"], "losrf")
+                }
+            type: opa
         title: cm-6-validation
-        description: Validates that the SD-WAN controller ConfigMap defines SLA thresholds for all three tactical bearers
-        remarks: '{"domain":{"type":"kubernetes","kubernetes-spec":{"resources":[{"name":"sdn_configmap","resource-rule":{"group":"","version":"v1","resource":"configmaps","namespaces":["tactical-sdn"]}}]}},"provider":{"type":"opa","opa-spec":{"rego":"package validate\n\nvalidate {\n  cm := input.sdn_configmap[0]\n  cm.metadata.name == \"sdn-controller-config\"\n  contains(cm.data[\"config.yaml\"], \"pleops\")\n  contains(cm.data[\"config.yaml\"], \"milsat\")\n  contains(cm.data[\"config.yaml\"], \"losrf\")\n}\n"}}}'
+        uuid: 8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f
+      - description: |
+          domain:
+            kubernetes-spec:
+              create-resources: null
+              resources:
+              - description: ""
+                name: sdn_daemonset
+                resource-rule:
+                  group: apps
+                  name: ""
+                  namespaces:
+                  - tactical-sdn
+                  resource: daemonsets
+                  version: v1
+            type: kubernetes
+          lula-version: ""
+          metadata:
+            name: sc-7-validation
+            uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
+          provider:
+            opa-spec:
+              rego: |
+                package validate
+
+                validate {
+                  ds := input.sdn_daemonset[_]
+                  ds.metadata.name == "tactical-sdn"
+                  ds.status.numberReady > 0
+                }
+            type: opa
+        title: sc-7-validation
+        uuid: a93c8860-4430-4f65-9c8f-68faaef48c77
+      - description: |
+          domain:
+            kubernetes-spec:
+              create-resources: null
+              resources:
+              - description: ""
+                name: sdn_service
+                resource-rule:
+                  group: ""
+                  name: ""
+                  namespaces:
+                  - tactical-sdn
+                  resource: services
+                  version: v1
+            type: kubernetes
+          lula-version: ""
+          metadata:
+            name: si-4-validation
+            uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
+          provider:
+            opa-spec:
+              rego: |
+                package validate
+
+                validate {
+                  svc := input.sdn_service[_]
+                  svc.metadata.name == "tactical-sdn-telemetry"
+                  svc.spec.ports[_].port == 8080
+                }
+            type: opa
+        title: si-4-validation
+        uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
+  components:
+    - control-implementations:
+        - description: NIST SP 800-53 Rev 5 Control Implementations for Tactical SD-WAN Stack
+          implemented-requirements:
+            - control-id: ac-3
+              description: Access Enforcement and Least Privilege Capabilities
+              links:
+                - href: '#ada6226f-8d7f-4b8c-9bea-90606455e273'
+                  rel: lula
+              uuid: 0d3d77f0-0baa-4ec3-aade-14966c7bfdb9
+            - control-id: cm-6
+              description: Configuration Settings and Policy Parameters
+              links:
+                - href: '#8c9d0e1f-2a3b-4c4d-9e6f-7a8b9c0d1e2f'
+                  rel: lula
+              uuid: 7b8c9d0e-1f2a-4b3c-8d5e-6f7a8b9c0d1e
+            - control-id: sc-7
+              description: Boundary Protection and Network Separation
+              links:
+                - href: '#a93c8860-4430-4f65-9c8f-68faaef48c77'
+                  rel: lula
+              uuid: 3c744348-c2e7-48f1-a822-4cda54fc0845
+            - control-id: si-4
+              description: Information System Monitoring and Telemetry Service
+              links:
+                - href: '#50e0667d-80d9-4a3c-9307-a2deed25ffa7'
+                  rel: lula
+              uuid: fe6f31c2-86f6-4f89-9b2e-b8f1fb47d4a7
+          source: https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+          uuid: 0dfab2ab-cd51-480e-95d2-be764904defe
+      description: Cloud-Native Containerized SD-WAN Dataplane and Dynamic SLA Policy Controller
+      purpose: Automated dynamic multi-bearer routing and traffic steering across contested DDIL environments
+      title: tactical-sdn-stack
+      type: software
+      uuid: 3d8a85fc-3087-422b-a139-37a49465be3b
+  metadata:
+    last-modified: 2026-10-06T18:59:24.174695268-05:00
+    oscal-version: 1.1.2
+    parties:
+      - name: Tactical Edge Communications Modernization Team
+        type: organization
+        uuid: a1051832-c39f-4136-8ab6-f6128faaa9d7
+    title: Tactical Edge SDN Dataplane and Policy Controller Component Definition
+    version: 0.3.0
+  uuid: ef4e942c-1998-46d7-a5c0-d91298caa521
