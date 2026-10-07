@@ -610,3 +610,151 @@ body.tactical-hud {
         grid-template-columns: 1fr;
     }
 }
+
+/* Benchmark Panel Styles */
+.benchmark-panel {
+    margin-bottom: 20px;
+}
+
+.benchmark-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.benchmark-compliance-pill {
+    font-size: 10px;
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--c2-cyan);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+}
+
+.benchmark-run-btn {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 255, 102, 0.2));
+    border: 1px solid var(--c2-cyan);
+    color: #fff;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 3px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.benchmark-run-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.4), rgba(0, 255, 102, 0.4));
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.benchmark-run-btn:active {
+    transform: scale(0.98);
+}
+
+.benchmark-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.benchmark-kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 12px 16px;
+    border-radius: 4px;
+    border-left: 3px solid var(--c2-cyan);
+}
+
+.kpi-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.kpi-value {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.kpi-target {
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+.benchmark-table-wrapper {
+    overflow-x: auto;
+}
+
+.benchmark-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    text-align: left;
+}
+
+.benchmark-table th {
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.benchmark-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    color: var(--text-main);
+}
+
+.benchmark-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.bearer-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+.tag-pleops {
+    background: rgba(0, 229, 255, 0.15);
+    color: var(--c2-cyan);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.tag-milsat {
+    background: rgba(189, 0, 255, 0.15);
+    color: #e066ff;
+    border: 1px solid rgba(189, 0, 255, 0.3);
+}
+
+.tag-losrf {
+    background: rgba(255, 184, 0, 0.15);
+    color: var(--c2-amber);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+.verdict-badge {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+.badge-pass {
+    background: rgba(0, 255, 102, 0.2);
+    color: var(--c2-green);
+    border: 1px solid var(--c2-green);
+}
+

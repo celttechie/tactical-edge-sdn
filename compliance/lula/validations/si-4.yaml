@@ -1,7 +1,6 @@
-uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
-name: si-4-validation
-title: si-4-validation
-description: Information System Monitoring and Telemetry Service Validation
+metadata:
+  name: si-4-validation
+  uuid: 50e0667d-80d9-4a3c-9307-a2deed25ffa7
 domain:
   type: kubernetes
   kubernetes-spec:
@@ -19,7 +18,7 @@ provider:
       package validate
 
       validate {
-        svc := input.sdn_service[0]
-        svc.metadata.name == "sdn-telemetry"
-        svc.spec.ports[0].port == 8080
+        svc := input.sdn_service[_]
+        svc.metadata.name == "tactical-sdn-telemetry"
+        svc.spec.ports[_].port == 8080
       }

@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-10-07T00:49:26Z",
+  "overall_status": "PASSED",
+  "avg_detection_latency_ms": 22639.7,
+  "avg_cutover_latency_ms": 450.0,
+  "avg_packet_survival_pct": 100.0,
+  "scenarios": [
+    {
+      "scenario_name": "Satellite Rain Fade (Progressive Degradation)",
+      "target_bearer": "pleops (P-LEO)",
+      "injected_impairment": "300ms delay + 15% loss",
+      "detection_time_ms": 56309.8,
+      "cutover_time_ms": 100.0,
+      "total_failover_ms": 56409.8,
+      "probes_sent": 15,
+      "probes_successful": 15,
+      "packet_survival_pct": 100.0,
+      "promoted_route": "eth-milsat",
+      "alternate_c2_latency_ms": 3944.8,
+      "recovery_time_ms": 15386.9,
+      "status": "PASSED"
+    },
+    {
+      "scenario_name": "RF Electronic Jamming Blackout",
+      "target_bearer": "pleops (P-LEO)",
+      "injected_impairment": "100% instantaneous packet severance",
+      "detection_time_ms": 7609.4,
+      "cutover_time_ms": 100.0,
+      "total_failover_ms": 7709.4,
+      "probes_sent": 15,
+      "probes_successful": 15,
+      "packet_survival_pct": 100.0,
+      "promoted_route": "eth-milsat",
+      "alternate_c2_latency_ms": 3182.1,
+      "recovery_time_ms": 16404.5,
+      "status": "PASSED"
+    },
+    {
+      "scenario_name": "Intermittent Link Flapping & Damping",
+      "target_bearer": "pleops (P-LEO)",
+      "injected_impairment": "Rapid on/off cycling (2s intervals)",
+      "detection_time_ms": 4000.0,
+      "cutover_time_ms": 1150.0,
+      "total_failover_ms": 5150.0,
+      "probes_sent": 15,
+      "probes_successful": 15,
+      "packet_survival_pct": 100.0,
+      "promoted_route": "eth-pleops",
+      "alternate_c2_latency_ms": 2102.0,
+      "recovery_time_ms": 3800.0,
+      "status": "PASSED"
+    }
+  ]
+}

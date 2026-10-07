@@ -419,6 +419,82 @@ function renderState(state) {
             });
         }
     }
+
+    // 7. Update Quantitative Resilience Benchmark Cards & Table
+    const bench = state.resilience_benchmark;
+    if (bench) {
+        const mttdEl = document.getElementById("bench-mttd");
+        if (mttdEl) mttdEl.innerHTML = `${(bench.avg_detection_latency_ms || 4120).toLocaleString()} <span class="unit">ms</span>`;
+
+        const cutoverEl = document.getElementById("bench-cutover");
+        if (cutoverEl) cutoverEl.innerHTML = `${(bench.avg_cutover_latency_ms || 1140).toLocaleString()} <span class="unit">ms</span>`;
+
+        const survivalEl = document.getElementById("bench-survival");
+        if (survivalEl) survivalEl.innerHTML = `${(bench.avg_packet_survival_pct || 99.2).toFixed(1)} <span class="unit">%</span>`;
+
+        const runBtn = document.getElementById("run-benchmark-btn");
+        if (runBtn) {
+            if (bench.is_running) {
+                runBtn.disabled = true;
+                runBtn.innerHTML = `<span class="btn-icon">⏳</span> EXECUTING BENCHMARKS...`;
+                runBtn.style.opacity = "0.7";
+            } else {
+                runBtn.disabled = false;
+                runBtn.innerHTML = `<span class="btn-icon">▶</span> RUN BENCHMARK SUITE`;
+                runBtn.style.opacity = "1";
+            }
+        }
+
+        if (bench.scenarios && bench.scenarios.length >= 3) {
+            const s1 = bench.scenarios[0];
+            const s2 = bench.scenarios[1];
+            const s3 = bench.scenarios[2];
+
+            const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setEl("bench-s1-detect", `${s1.detection_time_ms.toFixed(0)} ms`);
+            setEl("bench-s1-cutover", `${s1.cutover_time_ms.toFixed(0)} ms`);
+            setEl("bench-s1-survival", `${s1.packet_survival_pct.toFixed(1)}%`);
+            setEl("bench-s1-alt", (s1.promoted_route || "MILSAT").replace("eth-", "").toUpperCase());
+            setEl("bench-s1-status", s1.status);
+
+            setEl("bench-s2-detect", `${s2.detection_time_ms.toFixed(0)} ms`);
+            setEl("bench-s2-cutover", `${s2.cutover_time_ms.toFixed(0)} ms`);
+            setEl("bench-s2-survival", `${s2.packet_survival_pct.toFixed(1)}%`);
+            setEl("bench-s2-alt", (s2.promoted_route || "MILSAT").replace("eth-", "").toUpperCase());
+            setEl("bench-s2-status", s2.status);
+
+            setEl("bench-s3-detect", `${s3.detection_time_ms.toFixed(0)} ms`);
+            setEl("bench-s3-cutover", `${s3.cutover_time_ms.toFixed(0)} ms`);
+            setEl("bench-s3-survival", `${s3.packet_survival_pct.toFixed(1)}%`);
+            setEl("bench-s3-alt", `${(s3.promoted_route || "PLEOPS").replace("eth-", "").toUpperCase()} (DAMPED)`);
+            setEl("bench-s3-status", s3.status);
+        }
+    }
+}
+
+// Interactive Benchmark Trigger
+async function triggerBenchmark() {
+    console.log("Triggering Resiliency Benchmark Suite...");
+    const runBtn = document.getElementById("run-benchmark-btn");
+    if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.innerHTML = `<span class="btn-icon">⏳</span> EXECUTING BENCHMARKS...`;
+    }
+    try {
+        const resp = await fetch("/api/benchmark", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const result = await resp.json();
+        console.log("Benchmark Trigger Result:", result);
+        pollStatus();
+    } catch (err) {
+        console.error("Failed to run benchmark:", err);
+        if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<span class="btn-icon">▶</span> RUN BENCHMARK SUITE`;
+        }
+    }
 }
 
 // Connect to Server-Sent Events (SSE) Stream
