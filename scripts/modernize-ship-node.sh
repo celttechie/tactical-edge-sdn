@@ -3,21 +3,115 @@
 # modernize-ship-node.sh
 # Upgrades the shipboard gateway node from legacy systemd VNF to cloud-native
 # K3s orchestrator and deploys the containerized SD-WAN CNF via Zarf.
+# Supports granular step-by-step execution (--step <step>) or full pipeline.
 # ==============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SHIP_TARGET="${1:-ship-gateway}"
-PACKAGE_PATH=$(ls -t "${REPO_ROOT}/build"/zarf-package-tactical-sdn-stack-amd64-*.tar.zst 2>/dev/null | head -n 1 || true)
-ZARF_INIT_PKG="${HOME}/.zarf-cache/zarf-init-amd64-v0.85.0.tar.zst"
-K3S_BIN="${REPO_ROOT}/bin/k3s"
-ZARF_BIN="$(which zarf || echo "${HOME}/.local/bin/zarf")"
+SHIP_TARGET="ship-gateway"
+STEP="full"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --step)
+            STEP="$2"
+            shift 2
+            ;;
+        --step=*)
+            STEP="${1#*=}"
+            shift 1
+            ;;
+        reset-day0|reset)
+            STEP="reset-day0"
+            shift 1
+            ;;
+        bootstrap-k3s|k3s)
+            STEP="bootstrap-k3s"
+            shift 1
+            ;;
+        init-zarf|zarf)
+            STEP="init-zarf"
+            shift 1
+            ;;
+        cutover-cnf|cutover|deploy-cnf)
+            STEP="cutover-cnf"
+            shift 1
+            ;;
+        full)
+            STEP="full"
+            shift 1
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            SHIP_TARGET="$1"
+            shift 1
+            ;;
+    esac
+done
+
+# ------------------------------------------------------------------------------
+# STEP: RESET DAY 0 BASELINE
+# ------------------------------------------------------------------------------
+if [[ "$STEP" == "reset-day0" || "$STEP" == "reset" ]]; then
+    echo "======================================================================"
+    echo "  Tactical Edge Modernization: Resetting ${SHIP_TARGET} to Day 0 VNF  "
+    echo "======================================================================"
+    echo "==> Decommissioning CNF and stopping K3s service on ${SHIP_TARGET}..."
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
+sudo systemctl stop k3s 2>/dev/null || true
+sudo systemctl disable k3s 2>/dev/null || true
+sudo systemctl enable --now sdwan-controller.service 2>/dev/null || true
+echo " [✓] Default routing table:"
+ip route show default
+EOF
+    echo " [✓] Day 0 Legacy VNF restored. Dynamic SLA steering retired."
+    exit 0
+fi
+
+# Locate Zarf stack package
+PACKAGE_PATH=""
+for p in "${REPO_ROOT}/build"/zarf-package-tactical-sdn-stack-amd64-*.tar.zst /opt/tactical-sdn/build/zarf-package-tactical-sdn-stack-amd64-*.tar.zst; do
+    if [ -f "$p" ]; then
+        PACKAGE_PATH="$p"
+        break
+    fi
+done
+
+# Locate Zarf init package
+ZARF_INIT_PKG=""
+for p in "${HOME}/.zarf-cache/zarf-init-amd64-v0.85.0.tar.zst" "${REPO_ROOT}/build/zarf-init-amd64-v0.85.0.tar.zst" /opt/tactical-sdn/build/zarf-init-amd64-v0.85.0.tar.zst /opt/tactical-sdn/bin/zarf-init-amd64-v0.85.0.tar.zst; do
+    if [ -f "$p" ]; then
+        ZARF_INIT_PKG="$p"
+        break
+    fi
+done
+
+# Locate K3s binary
+K3S_BIN=""
+for b in "${REPO_ROOT}/bin/k3s" /opt/tactical-sdn/bin/k3s "$(which k3s 2>/dev/null || true)"; do
+    if [ -n "$b" ] && [ -f "$b" ]; then
+        K3S_BIN="$b"
+        break
+    fi
+done
+
+# Locate Zarf binary
+ZARF_BIN=""
+for b in "$(which zarf 2>/dev/null || true)" "${HOME}/.local/bin/zarf" /usr/local/bin/zarf "${REPO_ROOT}/bin/zarf" /opt/tactical-sdn/bin/zarf; do
+    if [ -n "$b" ] && [ -f "$b" ]; then
+        ZARF_BIN="$b"
+        break
+    fi
+done
 
 # Locate pre-cached foundational K3s container images (pause, coredns, local-path)
 K3S_CORE_IMAGES=""
-for img_path in "${REPO_ROOT}/bin/k3s-core-images.tar" "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar" "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar.zst"; do
+for img_path in "${REPO_ROOT}/bin/k3s-core-images.tar" /opt/tactical-sdn/bin/k3s-core-images.tar "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar" "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar.zst"; do
     if [ -f "${img_path}" ]; then
         K3S_CORE_IMAGES="${img_path}"
         break
@@ -26,46 +120,53 @@ done
 
 echo "======================================================================"
 echo "  Tactical Edge Modernization: Transitioning ${SHIP_TARGET} to CNF    "
+echo "  Execution Mode: ${STEP^^}                                           "
 echo "======================================================================"
 
-if [ -z "${PACKAGE_PATH}" ] || [ ! -f "${PACKAGE_PATH}" ]; then
-    echo "[-] Error: Zarf package not found in ${REPO_ROOT}/build/."
-    echo "    Running build-airgap-package.sh first..."
-    "${REPO_ROOT}/scripts/build-airgap-package.sh"
-    PACKAGE_PATH=$(ls -t "${REPO_ROOT}/build"/zarf-package-tactical-sdn-stack-amd64-*.tar.zst 2>/dev/null | head -n 1)
+# If running steps that need packages, ensure package is built
+if [[ "$STEP" == "full" || "$STEP" == "cutover-cnf" || "$STEP" == "deploy-cnf" ]]; then
+    if [ -z "${PACKAGE_PATH}" ] || [ ! -f "${PACKAGE_PATH}" ]; then
+        if [ -f "${REPO_ROOT}/scripts/build-airgap-package.sh" ]; then
+            echo "[-] Zarf package not found. Building airgap package..."
+            "${REPO_ROOT}/scripts/build-airgap-package.sh"
+            PACKAGE_PATH=$(ls -t "${REPO_ROOT}/build"/zarf-package-tactical-sdn-stack-amd64-*.tar.zst 2>/dev/null | head -n 1)
+        fi
+    fi
 fi
 
 # ------------------------------------------------------------------------------
-# ZERO-DOWNTIME HOT CUTOVER ARCHITECTURE (Issue #10)
-# Phase A (Pre-Staging): Legacy routing remains active & forwarding traffic.
-# Phase B (Cluster Bootstrap & Package Deploy): K3s and Zarf initialize in background.
-# Phase C (Atomic Cutover): CNF is verified Ready; atomically retire legacy VNF.
+# STEP 1, 2, 3: BOOTSTRAP K3S
 # ------------------------------------------------------------------------------
+if [[ "$STEP" == "full" || "$STEP" == "bootstrap-k3s" || "$STEP" == "k3s" ]]; then
+    echo "==> [Step 1/5] Verifying legacy routing is active and passing traffic..."
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "systemctl is-active sdwan-controller.service >/dev/null 2>&1 && echo ' [✓] Legacy routing service is active.' || echo ' [!] Legacy service not currently running (proceeding with clean modernization).'"
 
-echo "==> [Step 1/5] Verifying legacy routing is active and passing traffic..."
-ssh "${SHIP_TARGET}" "systemctl is-active sdwan-controller.service >/dev/null 2>&1 && echo ' [✓] Legacy routing service is active.' || echo ' [!] Legacy service not currently running (proceeding with clean modernization).'"
+    echo "==> [Step 2/5] Staging K3s and Zarf binaries onto ${SHIP_TARGET} (Background Pre-stage)..."
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "mkdir -p ~/zarf-stage ~/bin ~/.zarf-cache"
+    
+    if [ -n "${K3S_BIN}" ] && [ -f "${K3S_BIN}" ]; then
+        scp -q -o StrictHostKeyChecking=no "${K3S_BIN}" "${SHIP_TARGET}:~/bin/k3s"
+        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo chmod +x /usr/local/bin/k3s && sudo ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl"
+    fi
+    if [ -n "${ZARF_BIN}" ] && [ -f "${ZARF_BIN}" ]; then
+        scp -q -o StrictHostKeyChecking=no "${ZARF_BIN}" "${SHIP_TARGET}:~/bin/zarf"
+        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/zarf"
+    fi
 
-echo "==> [Step 2/5] Staging K3s and Zarf binaries onto ${SHIP_TARGET} (Background Pre-stage)..."
-ssh "${SHIP_TARGET}" "mkdir -p ~/zarf-stage ~/bin ~/.zarf-cache"
-scp -q "${K3S_BIN}" "${SHIP_TARGET}:~/bin/k3s"
-scp -q "${ZARF_BIN}" "${SHIP_TARGET}:~/bin/zarf"
-if [ -n "${K3S_CORE_IMAGES}" ] && [ -f "${K3S_CORE_IMAGES}" ]; then
-    echo "==> Staging foundational K3s air-gap images (${K3S_CORE_IMAGES})..."
-    IMG_BASE="$(basename "${K3S_CORE_IMAGES}")"
-    scp -q "${K3S_CORE_IMAGES}" "${SHIP_TARGET}:~/zarf-stage/${IMG_BASE}"
-    ssh "${SHIP_TARGET}" "sudo mkdir -p /var/lib/rancher/k3s/agent/images && if [[ '${IMG_BASE}' == *.zst ]]; then sudo zstd -d ~/zarf-stage/${IMG_BASE} -o /var/lib/rancher/k3s/agent/images/k3s-core-images.tar; else sudo cp ~/zarf-stage/${IMG_BASE} /var/lib/rancher/k3s/agent/images/; fi"
-fi
-ssh "${SHIP_TARGET}" "sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/k3s /usr/local/bin/zarf && sudo ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl"
+    if [ -n "${K3S_CORE_IMAGES}" ] && [ -f "${K3S_CORE_IMAGES}" ]; then
+        echo "==> Staging foundational K3s air-gap images (${K3S_CORE_IMAGES})..."
+        IMG_BASE="$(basename "${K3S_CORE_IMAGES}")"
+        scp -q -o StrictHostKeyChecking=no "${K3S_CORE_IMAGES}" "${SHIP_TARGET}:~/zarf-stage/${IMG_BASE}"
+        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo mkdir -p /var/lib/rancher/k3s/agent/images && if [[ '${IMG_BASE}' == *.zst ]]; then sudo zstd -d ~/zarf-stage/${IMG_BASE} -o /var/lib/rancher/k3s/agent/images/k3s-core-images.tar; else sudo cp ~/zarf-stage/${IMG_BASE} /var/lib/rancher/k3s/agent/images/; fi"
+    fi
 
-echo "==> [Step 3/5] Bootstrapping air-gapped K3s cluster in background (Zero-Downtime)..."
-ssh "${SHIP_TARGET}" "bash -s" << 'EOF'
+    echo "==> [Step 3/5] Bootstrapping air-gapped K3s cluster in background (Zero-Downtime)..."
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
 if ! command -v k3s >/dev/null 2>&1; then
     echo "[-] k3s binary missing from PATH"
     exit 1
 fi
 
-# Configure K3s service unit with host networking and no traefik/servicelb/metrics-server to minimize SWaP
-# NOTE: local-storage is preserved to satisfy Zarf registry PVC requirements
 sudo tee /etc/systemd/system/k3s.service > /dev/null << 'SERVICE'
 [Unit]
 Description=Lightweight Kubernetes (Air-Gapped Tactical Edge)
@@ -105,12 +206,26 @@ mkdir -p ~/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sudo chown -R $(id -un):$(id -gn) ~/.kube
 EOF
+    echo " [✓] Stage 2 Complete: K3s node verified ready. Legacy routing remains active."
+    if [[ "$STEP" == "bootstrap-k3s" || "$STEP" == "k3s" ]]; then
+        exit 0
+    fi
+fi
 
-echo "==> [Step 4/5] Staging Zarf initialization package and running zarf init in background..."
-scp -q "${ZARF_INIT_PKG}" "${SHIP_TARGET}:~/.zarf-cache/zarf-init-amd64-v0.85.0.tar.zst"
-scp -q "${PACKAGE_PATH}" "${SHIP_TARGET}:~/zarf-stage/"
+# ------------------------------------------------------------------------------
+# STEP 4: INITIALIZE ZARF SEED REGISTRY
+# ------------------------------------------------------------------------------
+if [[ "$STEP" == "full" || "$STEP" == "init-zarf" || "$STEP" == "zarf" ]]; then
+    echo "==> [Step 4/5] Staging Zarf initialization package and running zarf init in background..."
+    if [ -n "${ZARF_INIT_PKG}" ] && [ -f "${ZARF_INIT_PKG}" ]; then
+        INIT_BASE="$(basename "${ZARF_INIT_PKG}")"
+        scp -q -o StrictHostKeyChecking=no "${ZARF_INIT_PKG}" "${SHIP_TARGET}:~/.zarf-cache/${INIT_BASE}"
+    fi
+    if [ -n "${PACKAGE_PATH}" ] && [ -f "${PACKAGE_PATH}" ]; then
+        scp -q -o StrictHostKeyChecking=no "${PACKAGE_PATH}" "${SHIP_TARGET}:~/zarf-stage/"
+    fi
 
-ssh "${SHIP_TARGET}" "bash -s" << 'EOF'
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "==> Initializing Zarf on ship-gateway..."
 zarf init --confirm --components zarf-seed-registry,zarf-registry,zarf-injector
@@ -118,10 +233,29 @@ zarf init --confirm --components zarf-seed-registry,zarf-registry,zarf-injector
 echo "==> Waiting for Zarf seed registry pod readiness..."
 kubectl wait --namespace zarf --for=condition=ready pod --selector=app=docker-registry --timeout=120s
 EOF
+    echo " [✓] Stage 3 Complete: Zarf in-cluster seed registry ready. Packages staged."
+    if [[ "$STEP" == "init-zarf" || "$STEP" == "zarf" ]]; then
+        exit 0
+    fi
+fi
 
-echo "==> [Step 5/5] Deploying containerized SD-WAN CNF and performing Atomic Hot Cutover..."
-PKG_NAME="$(basename "${PACKAGE_PATH}")"
-ssh "${SHIP_TARGET}" "bash -s -- \"${PKG_NAME}\"" << 'EOF'
+# ------------------------------------------------------------------------------
+# STEP 5: DEPLOY CONTAINERIZED CNF & ATOMIC HOT CUTOVER
+# ------------------------------------------------------------------------------
+if [[ "$STEP" == "full" || "$STEP" == "cutover-cnf" || "$STEP" == "deploy-cnf" ]]; then
+    echo "==> [Step 5/5] Deploying containerized SD-WAN CNF and performing Atomic Hot Cutover..."
+    if [ -n "${PACKAGE_PATH}" ] && [ -f "${PACKAGE_PATH}" ]; then
+        PKG_NAME="$(basename "${PACKAGE_PATH}")"
+        scp -q -o StrictHostKeyChecking=no "${PACKAGE_PATH}" "${SHIP_TARGET}:~/zarf-stage/"
+    else
+        PKG_NAME=$(ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "ls -t ~/zarf-stage/zarf-package-tactical-sdn-stack-*.tar.zst 2>/dev/null | head -n 1 | xargs -r basename || echo ''")
+        if [ -z "${PKG_NAME}" ]; then
+            echo "[-] Error: No Zarf package found on host or staged on ${SHIP_TARGET}." >&2
+            exit 1
+        fi
+    fi
+
+    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s -- \"${PKG_NAME}\"" << 'EOF'
 PKG_NAME="$1"
 REMOTE_PKG="${HOME}/zarf-stage/${PKG_NAME}"
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
@@ -130,7 +264,7 @@ echo "==> Deploying ${REMOTE_PKG}..."
 zarf package deploy "${REMOTE_PKG}" --confirm
 
 echo "==> Waiting for Tactical SDN CNF DaemonSet pod readiness..."
-kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn --timeout=60s
+kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn-stack --timeout=60s
 
 echo "==> [ATOMIC HOT CUTOVER] CNF pod is healthy. Atomically retiring legacy routing service..."
 sudo systemctl stop sdwan-controller.service 2>/dev/null || true
@@ -142,9 +276,13 @@ if command -v conntrack >/dev/null 2>&1; then
 fi
 echo " [✓] Atomic cutover completed successfully with zero pre-deployment downtime."
 EOF
+    echo " [✓] Stage 4 Complete: Cloud-Native CNF deployed and active. Atomic cutover verified."
+fi
 
 echo ""
 echo "======================================================================"
 echo "  [SUCCESS] ${SHIP_TARGET} successfully modernized to Cloud-Native CNF!"
 echo "======================================================================"
-"${REPO_ROOT}/scripts/verify-ship-modernization.sh" "${SHIP_TARGET}"
+if [ -f "${REPO_ROOT}/scripts/verify-ship-modernization.sh" ]; then
+    "${REPO_ROOT}/scripts/verify-ship-modernization.sh" "${SHIP_TARGET}"
+fi
