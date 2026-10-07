@@ -10,7 +10,7 @@ Accreditation of software running in tactical defense environments (DoD IL4/IL5)
 
 ## Decision
 1. Implement **Lula** as our compliance engine using the **OSCAL (Open Security Controls Assessment Language)** standard.
-2. Define component validation manifests (`lula-component.yaml`) mapping specific NIST SP 800-53 and DISA STIG controls (container security, network filtering, non-root execution, privilege limits) directly to Kubernetes runtime checks and kernel sysctls.
+2. Define component validation manifests (`oscal-component.yaml` and `compliance/lula/validations/*.yaml`) mapping specific NIST SP 800-53 Rev 5 and DISA STIG controls (container security, network boundary filtering, capability bounding, telemetry monitoring) directly to Kubernetes runtime checks and kernel sysctls.
 3. Integrate Lula audit execution into post-deployment scripts and CI/CD pipelines to generate instant, auditable assessment evidence.
 
 ## Consequences
