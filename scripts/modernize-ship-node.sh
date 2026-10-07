@@ -15,6 +15,15 @@ ZARF_INIT_PKG="${HOME}/.zarf-cache/zarf-init-amd64-v0.85.0.tar.zst"
 K3S_BIN="${REPO_ROOT}/bin/k3s"
 ZARF_BIN="$(which zarf || echo "${HOME}/.local/bin/zarf")"
 
+# Locate pre-cached foundational K3s container images (pause, coredns, local-path)
+K3S_CORE_IMAGES=""
+for img_path in "${REPO_ROOT}/bin/k3s-core-images.tar" "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar" "${REPO_ROOT}/bin/k3s-airgap-images-amd64.tar.zst"; do
+    if [ -f "${img_path}" ]; then
+        K3S_CORE_IMAGES="${img_path}"
+        break
+    fi
+done
+
 echo "======================================================================"
 echo "  Tactical Edge Modernization: Transitioning ${SHIP_TARGET} to CNF    "
 echo "======================================================================"
@@ -33,7 +42,13 @@ echo "==> [Step 2/5] Staging K3s and Zarf binaries onto ${SHIP_TARGET}..."
 ssh "${SHIP_TARGET}" "mkdir -p ~/zarf-stage ~/bin ~/.zarf-cache"
 scp -q "${K3S_BIN}" "${SHIP_TARGET}:~/bin/k3s"
 scp -q "${ZARF_BIN}" "${SHIP_TARGET}:~/bin/zarf"
-ssh "${SHIP_TARGET}" "sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/k3s /usr/local/bin/zarf"
+if [ -n "${K3S_CORE_IMAGES}" ] && [ -f "${K3S_CORE_IMAGES}" ]; then
+    echo "==> Staging foundational K3s air-gap images (${K3S_CORE_IMAGES})..."
+    IMG_BASE="$(basename "${K3S_CORE_IMAGES}")"
+    scp -q "${K3S_CORE_IMAGES}" "${SHIP_TARGET}:~/zarf-stage/${IMG_BASE}"
+    ssh "${SHIP_TARGET}" "sudo mkdir -p /var/lib/rancher/k3s/agent/images && if [[ '${IMG_BASE}' == *.zst ]]; then sudo zstd -d ~/zarf-stage/${IMG_BASE} -o /var/lib/rancher/k3s/agent/images/k3s-core-images.tar; else sudo cp ~/zarf-stage/${IMG_BASE} /var/lib/rancher/k3s/agent/images/; fi"
+fi
+ssh "${SHIP_TARGET}" "sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/k3s /usr/local/bin/zarf && sudo ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl"
 
 echo "==> [Step 3/5] Bootstrapping air-gapped K3s cluster on ${SHIP_TARGET}..."
 ssh "${SHIP_TARGET}" "bash -s" << 'EOF'
@@ -42,7 +57,8 @@ if ! command -v k3s >/dev/null 2>&1; then
     exit 1
 fi
 
-# Configure K3s service unit with host networking and no traefik/servicelb to minimize SWaP
+# Configure K3s service unit with host networking and no traefik/servicelb/metrics-server to minimize SWaP
+# NOTE: local-storage is preserved to satisfy Zarf registry PVC requirements
 sudo tee /etc/systemd/system/k3s.service > /dev/null << 'SERVICE'
 [Unit]
 Description=Lightweight Kubernetes (Air-Gapped Tactical Edge)
@@ -66,7 +82,7 @@ Restart=always
 RestartSec=5s
 ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
-ExecStart=/usr/local/bin/k3s server --disable traefik --disable servicelb --disable local-storage --flannel-backend=host-gw --write-kubeconfig-mode 644
+ExecStart=/usr/local/bin/k3s server --disable traefik --disable servicelb --disable metrics-server --flannel-backend=host-gw --write-kubeconfig-mode 644
 
 [Install]
 WantedBy=multi-user.target
@@ -83,6 +99,10 @@ for i in {1..30}; do
     fi
     sleep 2
 done
+
+mkdir -p ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown -R $(id -un):$(id -gn) ~/.kube
 EOF
 
 echo "==> [Step 4/5] Staging Zarf initialization package and running zarf init..."
