@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tactical Edge SD-WAN // Operations HUD & Chaos Controller</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body class="tactical-hud">
     <!-- Top Header Bar -->
@@ -31,6 +31,17 @@
         </div>
 
         <div class="header-right">
+            <div class="header-control-buttons">
+                <button class="hud-ctrl-btn btn-ctrl-upgrade" onclick="openSidebar('upgrade')" title="Gateway Modernization Lifecycle (Hotkey: U)">
+                    <span class="icon">🚀</span> UPGRADE
+                </button>
+                <button class="hud-ctrl-btn btn-ctrl-chaos" onclick="openSidebar('chaos')" title="DDIL Chaos Impairment Injection (Hotkey: C)">
+                    <span class="icon">⚡</span> CHAOS
+                </button>
+                <button class="hud-ctrl-btn btn-ctrl-logs" onclick="openSidebar('logs')" title="Live Backend Execution Logs (Hotkey: L)">
+                    <span class="icon">📟</span> LOGS <span class="log-badge" id="header-log-badge">0</span>
+                </button>
+            </div>
             <div class="telemetry-timer">
                 <span class="timer-label">ZULU TIME:</span>
                 <span class="timer-value" id="zulu-clock">00:00:00Z</span>
@@ -45,12 +56,115 @@
     <!-- Main Container -->
     <main class="hud-container">
         
+        <!-- SECTION 0: Modernization Lifecycle & Gateway Transformation Control -->
+        <section class="hud-panel modernization-panel" id="modernization-panel">
+            <div class="panel-header">
+                <h2><span class="icon">🚀</span> SHIPBOARD GATEWAY MODERNIZATION LIFECYCLE</h2>
+                <div class="modernization-header-right">
+                    <div class="modernization-stage-badge" id="hud-modern-stage-badge">
+                        STAGE 4: CLOUD-NATIVE CNF ACTIVE
+                    </div>
+                    <button class="btn-open-panel-inline" onclick="openSidebar('upgrade')" title="Open Upgrade Controls">
+                        🎛️ UPGRADE CONTROLS ❯
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modernization Alert Feedback Banner -->
+            <div class="modernization-banner-area">
+                <div class="modern-alert-banner" id="modern-alert-banner">
+                    <div class="alert-content">
+                        <span class="alert-icon" id="modern-alert-icon">✓</span>
+                        <span class="alert-text" id="modern-alert-text">Modernized Cloud-Native CNF Active (K3s Dynamic SLA Steering)</span>
+                    </div>
+                    <span class="alert-progress" id="modern-alert-progress"></span>
+                </div>
+            </div>
+
+            <!-- Stepper Visualizer -->
+            <div class="modernization-stepper">
+                <!-- Step 1 -->
+                <div class="step-card" id="step-card-1">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">DAY 0 BASELINE</div>
+                        <div class="step-desc">Legacy VNF & Static Metric Routing</div>
+                        <div class="step-status-wrapper">
+                            <span class="step-status" id="step-1-status">ACTIVE (DAY 0)</span>
+                            <span class="step-completion-badge" id="step-1-badge" style="display:none;">✓ DAY 0</span>
+                        </div>
+                        <div class="step-progress-wrapper" id="step-1-progress" style="display:none;">
+                            <div class="step-progress-fill" id="step-1-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="step-detail-text" id="step-1-detail">Static Metric Dataplane</div>
+                    </div>
+                </div>
+                <div class="step-connector" id="step-conn-1"></div>
+
+                <!-- Step 2 -->
+                <div class="step-card" id="step-card-2">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">K3s BOOTSTRAP</div>
+                        <div class="step-desc">Background Air-Gap Node Init (Zero-Downtime)</div>
+                        <div class="step-status-wrapper">
+                            <span class="step-status" id="step-2-status">PENDING</span>
+                            <span class="step-completion-badge" id="step-2-badge" style="display:none;">✓ SETUP COMPLETED</span>
+                        </div>
+                        <div class="step-progress-wrapper" id="step-2-progress" style="display:none;">
+                            <div class="step-progress-fill" id="step-2-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="step-detail-text" id="step-2-detail">Cluster Online • Node Ready</div>
+                    </div>
+                </div>
+                <div class="step-connector" id="step-conn-2"></div>
+
+                <!-- Step 3 -->
+                <div class="step-card" id="step-card-3">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">ZARF STAGING</div>
+                        <div class="step-desc">In-Cluster Seed Registry & Offline Webhooks</div>
+                        <div class="step-status-wrapper">
+                            <span class="step-status" id="step-3-status">PENDING</span>
+                            <span class="step-completion-badge" id="step-3-badge" style="display:none;">✓ SETUP COMPLETED</span>
+                        </div>
+                        <div class="step-progress-wrapper" id="step-3-progress" style="display:none;">
+                            <div class="step-progress-fill" id="step-3-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="step-detail-text" id="step-3-detail">Seed Registry Staged</div>
+                    </div>
+                </div>
+                <div class="step-connector" id="step-conn-3"></div>
+
+                <!-- Step 4 -->
+                <div class="step-card" id="step-card-4">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">HOT CUTOVER (CNF)</div>
+                        <div class="step-desc">Atomic DaemonSet Rollout & Dynamic SLA Steering</div>
+                        <div class="step-status-wrapper">
+                            <span class="step-status" id="step-4-status">PENDING</span>
+                            <span class="step-completion-badge" id="step-4-badge" style="display:none;">✓ CUTOVER COMPLETE</span>
+                        </div>
+                        <div class="step-progress-wrapper" id="step-4-progress" style="display:none;">
+                            <div class="step-progress-fill" id="step-4-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="step-detail-text" id="step-4-detail">Sub-second SLA Steering</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- SECTION 1: Dynamic Topology & Packet Flow Visualizer -->
         <section class="hud-panel topology-panel">
             <div class="panel-header">
                 <h2><span class="icon">☵</span> LIVE MULTI-BEARER TOPOLOGY & PACKET FLOW</h2>
-                <div class="traffic-metrics-pill" id="enclave-traffic-pill">
-                    C2 TRAFFIC STREAM: <span class="highlight" id="top-enclave-rate">40.0 pkts/s</span> | <span class="highlight" id="top-enclave-kbps">220.0 Kbps</span>
+                <div class="topology-header-tags">
+                    <span class="gateway-tag" id="topo-gateway-tag">GATEWAY: CLOUD-NATIVE CNF (10.200.1.2)</span>
+                    <div class="traffic-metrics-pill" id="enclave-traffic-pill">
+                        C2 TRAFFIC STREAM: <span class="highlight" id="top-enclave-rate">40.0 pkts/s</span> | <span class="highlight" id="top-enclave-kbps">220.0 Kbps</span>
+                    </div>
                 </div>
             </div>
             <div class="topology-wrapper">
@@ -301,16 +415,167 @@
             </div>
         </section>
 
-        <!-- SECTION 5: Interactive DDIL Chaos Warfare Console & Event Log -->
-        <div class="bottom-grid">
+        <!-- SECTION 5: Real-Time C2 Event & Routing Audit Stream -->
+        <section class="hud-panel events-panel full-width-panel">
+            <div class="panel-header">
+                <h2><span class="icon">📋</span> TACTICAL C2 ROUTING & EVENT AUDIT LOG</h2>
+                <div class="events-header-right">
+                    <span class="event-count-badge" id="event-count">0 EVENTS</span>
+                    <button class="btn-open-panel-inline" onclick="openSidebar('chaos')" title="Open Chaos Injection Controls">
+                        ⚡ INJECT CHAOS ❯
+                    </button>
+                    <button class="btn-open-panel-inline" onclick="openSidebar('logs')" title="Open Live Execution Logs">
+                        📟 BACKEND LOGS ❯
+                    </button>
+                </div>
+            </div>
+            <div class="events-terminal" id="events-terminal">
+                <div class="event-entry event-info">
+                    <span class="event-time">[INIT]</span>
+                    <span class="event-tag">[SYS]</span>
+                    <span class="event-msg">Tactical Operations HUD initialized. Awaiting live telemetry stream...</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="hud-footer">
+        <div>TACTICAL EDGE SD-WAN SYSTEM v0.4.0 // AIR-GAPPED ZARF PACKAGE // NIST SP 800-53 REV 5 COMPLIANT</div>
+        <div>SIMULATED SHIP ENCLAVE (10.10.1.10) ⟷ SD-WAN CNF (10.200.1.2) ⟷ SHORE C2 GATEWAY (10.200.1.10)</div>
+    </footer>
+
+    <!-- Floating Vertical Dock Strip (Pinned to Right Viewport Edge) -->
+    <div class="floating-dock-strip" id="floating-dock-strip">
+        <button class="dock-tab-btn" onclick="toggleSidebar('upgrade')" title="Gateway Upgrade Lifecycle (Hotkey: U)">
+            <span class="tab-icon">🚀</span>
+            <span class="tab-label">UPGRADE</span>
+        </button>
+        <button class="dock-tab-btn" onclick="toggleSidebar('chaos')" title="DDIL Chaos Impairment (Hotkey: C)">
+            <span class="tab-icon">⚡</span>
+            <span class="tab-label">CHAOS</span>
+        </button>
+        <button class="dock-tab-btn" onclick="toggleSidebar('logs')" title="Backend Execution Logs (Hotkey: L)">
+            <span class="tab-icon">📟</span>
+            <span class="tab-label">LOGS</span>
+            <span class="tab-badge" id="floating-log-badge">0</span>
+        </button>
+    </div>
+
+    <!-- DOCKED MISSION CONTROL SIDEBAR -->
+    <aside class="hud-sidebar" id="hud-sidebar" aria-label="Mission Control Center">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+            <div class="sidebar-title-group">
+                <span class="sidebar-icon">🎛️</span>
+                <div class="sidebar-heading">
+                    <h3>MISSION CONTROL CENTER</h3>
+                    <div class="sidebar-subheading">Interactive Operations, Chaos & Logs</div>
+                </div>
+            </div>
+            <button class="sidebar-close-btn" onclick="closeSidebar()" title="Collapse Sidebar (Esc)">
+                ✕ COLLAPSE
+            </button>
+        </div>
+
+        <!-- Sidebar Tab Navigation (3 Pages) -->
+        <nav class="sidebar-nav-tabs">
+            <button class="sidebar-tab-btn active" id="tab-btn-upgrade" onclick="switchSidebarTab('upgrade')">
+                <span class="tab-icon">🚀</span> UPGRADE
+            </button>
+            <button class="sidebar-tab-btn" id="tab-btn-chaos" onclick="switchSidebarTab('chaos')">
+                <span class="tab-icon">⚡</span> CHAOS
+            </button>
+            <button class="sidebar-tab-btn" id="tab-btn-logs" onclick="switchSidebarTab('logs')">
+                <span class="tab-icon">📟</span> LOGS <span class="tab-badge" id="sidebar-tab-log-badge">0</span>
+            </button>
+        </nav>
+
+        <!-- Sidebar Body Area (Tab Panels) -->
+        <div class="sidebar-body">
             
-            <!-- Chaos Injection Console -->
-            <section class="hud-panel chaos-panel">
-                <div class="panel-header">
-                    <h2><span class="icon">⚡</span> DDIL CHAOS INJECTION CONSOLE</h2>
+            <!-- PAGE 1: UPGRADE (Gateway Modernization Lifecycle) -->
+            <div class="sidebar-tab-panel active" id="panel-upgrade">
+                <div class="sidebar-panel-header">
+                    <h4>SHIPBOARD GATEWAY MODERNIZATION</h4>
+                    <span class="panel-tag">AIR-GAPPED LIFECYCLE</span>
+                </div>
+                <div class="sidebar-card">
+                    <div class="card-caption">CURRENT GATEWAY POSTURE</div>
+                    <div class="card-status-row">
+                        <span class="status-key">Active Mode:</span>
+                        <span class="status-val highlight-cyan" id="sidebar-mode-val">DYNAMIC SLA STEERING</span>
+                    </div>
+                    <div class="card-status-row">
+                        <span class="status-key">Dataplane:</span>
+                        <span class="status-val highlight-green" id="sidebar-dataplane-val">CLOUD-NATIVE CNF</span>
+                    </div>
+                </div>
+
+                <!-- Modernization Action Controls -->
+                <div class="sidebar-controls-section">
+                    <div class="controls-status-label">
+                        <span>OPERATOR MODERNIZATION ACTIONS:</span>
+                        <span class="transition-msg" id="modern-transition-msg"></span>
+                        <span class="transition-completed-msg" id="modern-completed-msg"></span>
+                    </div>
+
+                    <div class="sidebar-btn-stack">
+                        <button class="modern-btn btn-step" id="btn-step-reset" onclick="triggerModernization('reset_day0')">
+                            <span class="btn-icon">⏪</span>
+                            <div class="btn-stack-text">
+                                <div class="title">RESET TO DAY 0 (LEGACY)</div>
+                                <div class="desc">Restore legacy VNF & static routing</div>
+                            </div>
+                        </button>
+                        <button class="modern-btn btn-step" id="btn-step-k3s" onclick="triggerModernization('bootstrap_k3s')">
+                            <span class="btn-icon">1️⃣</span>
+                            <div class="btn-stack-text">
+                                <div class="title">STEP 1: BOOTSTRAP K3s</div>
+                                <div class="desc">Air-gapped node init (zero downtime)</div>
+                            </div>
+                        </button>
+                        <button class="modern-btn btn-step" id="btn-step-zarf" onclick="triggerModernization('init_zarf')">
+                            <span class="btn-icon">2️⃣</span>
+                            <div class="btn-stack-text">
+                                <div class="title">STEP 2: INIT ZARF REGISTRY</div>
+                                <div class="desc">Stage offline registry & webhook agents</div>
+                            </div>
+                        </button>
+                        <button class="modern-btn btn-step" id="btn-step-cutover" onclick="triggerModernization('cutover_cnf')">
+                            <span class="btn-icon">3️⃣</span>
+                            <div class="btn-stack-text">
+                                <div class="title">STEP 3: ATOMIC HOT CUTOVER</div>
+                                <div class="desc">Deploy CNF & retire legacy VNF (0ms loss)</div>
+                            </div>
+                        </button>
+                        <button class="modern-btn btn-upgrade" id="btn-step-full" onclick="triggerModernization('full_upgrade')">
+                            <span class="btn-icon">⚡</span>
+                            <div class="btn-stack-text">
+                                <div class="title">FULL AUTONOMOUS UPGRADE</div>
+                                <div class="desc">Execute end-to-end modernization sequence</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-info-box">
+                    <div class="info-title">ℹ️ ZERO-DOWNTIME ARCHITECTURE</div>
+                    <p>Legacy routing continues forwarding C2 traffic during Phases 1 & 2. In Phase 3, conntrack states are preserved during route handoff to the CNF container.</p>
+                </div>
+            </div>
+
+            <!-- PAGE 2: CHAOS (DDIL Impairment & EW Injection) -->
+            <div class="sidebar-tab-panel" id="panel-chaos">
+                <div class="sidebar-panel-header">
+                    <h4>DDIL CHAOS INJECTION CONSOLE</h4>
                     <span class="blink-tag">WARFARE SIMULATION</span>
                 </div>
-                <div class="chaos-controls-grid">
+                <div class="sidebar-desc-text">
+                    Inject real-time impairments on live Linux kernel Netem interfaces to validate dynamic SLA steering and packet survival.
+                </div>
+
+                <div class="sidebar-btn-stack">
                     <button class="chaos-btn btn-danger" onclick="triggerChaos('jam_pleops')">
                         <span class="btn-icon">🚨</span>
                         <div class="btn-text">
@@ -359,32 +624,57 @@
                         </div>
                     </button>
                 </div>
-            </section>
+            </div>
 
-            <!-- Real-Time C2 Event & Routing Audit Stream -->
-            <section class="hud-panel events-panel">
-                <div class="panel-header">
-                    <h2><span class="icon">📋</span> TACTICAL C2 ROUTING & EVENT AUDIT LOG</h2>
-                    <span class="event-count-badge" id="event-count">0 EVENTS</span>
+            <!-- PAGE 3: LOGS (Real-Time Backend Execution Stream) -->
+            <div class="sidebar-tab-panel" id="panel-logs">
+                <div class="sidebar-panel-header">
+                    <h4>BACKEND EXECUTION LOGS</h4>
+                    <span class="live-stream-badge" id="drawer-stream-status">● LIVE STREAM</span>
                 </div>
-                <div class="events-terminal" id="events-terminal">
-                    <div class="event-entry event-info">
-                        <span class="event-time">[INIT]</span>
-                        <span class="event-tag">[SYS]</span>
-                        <span class="event-msg">Tactical Operations HUD initialized. Awaiting live telemetry stream...</span>
+
+                <!-- Toolbar Controls -->
+                <div class="log-drawer-toolbar">
+                    <div class="filter-pills" id="log-filter-pills">
+                        <button class="pill active" data-filter="ALL" onclick="setLogSourceFilter('ALL')">ALL</button>
+                        <button class="pill" data-filter="MODERNIZER" onclick="setLogSourceFilter('MODERNIZER')">MODERN</button>
+                        <button class="pill" data-filter="CMD" onclick="setLogSourceFilter('CMD')">CMD</button>
+                        <button class="pill" data-filter="PROBER" onclick="setLogSourceFilter('PROBER')">PROBER</button>
+                        <button class="pill" data-filter="SLA-ENGINE" onclick="setLogSourceFilter('SLA-ENGINE')">SLA</button>
+                        <button class="pill" data-filter="CHAOS" onclick="setLogSourceFilter('CHAOS')">CHAOS</button>
+                    </div>
+                    <div class="search-and-controls">
+                        <input type="text" id="log-search-input" class="log-search-input" placeholder="Search..." oninput="onLogSearchInput()">
+                        <label class="autoscroll-toggle">
+                            <input type="checkbox" id="autoscroll-chk" checked onchange="toggleAutoScroll(this.checked)">
+                            <span>AUTO</span>
+                        </label>
+                        <button class="btn-clear-logs" onclick="clearLogsOnServer()" title="Clear Log History">🗑</button>
                     </div>
                 </div>
-            </section>
+
+                <!-- Terminal Display Area -->
+                <div class="log-drawer-terminal" id="log-drawer-terminal">
+                    <div class="terminal-body" id="drawer-terminal-content">
+                        <!-- Dynamic Log Entries Injected Here -->
+                    </div>
+                </div>
+
+                <!-- Log Footer -->
+                <div class="log-drawer-footer">
+                    <div class="footer-stats">
+                        <span>TOTAL: <strong id="log-count-total">0</strong></span>
+                        <span>SHOWN: <strong id="log-count-filtered">0</strong></span>
+                    </div>
+                    <div class="footer-actions">
+                        <button class="btn-copy-logs" id="btn-copy-logs" onclick="copyLogsToClipboard()">📋 COPY</button>
+                    </div>
+                </div>
+            </div>
 
         </div>
+    </aside>
 
-    </main>
-
-    <footer class="hud-footer">
-        <div>TACTICAL EDGE SD-WAN SYSTEM v0.4.0 // AIR-GAPPED ZARF PACKAGE // NIST SP 800-53 REV 5 COMPLIANT</div>
-        <div>SIMULATED SHIP ENCLAVE (10.10.1.10) ⟷ SD-WAN CNF (10.200.1.2) ⟷ SHORE C2 GATEWAY (10.200.1.10)</div>
-    </footer>
-
-    <script src="app.js"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>
