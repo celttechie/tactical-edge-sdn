@@ -53,7 +53,7 @@ flowchart TD
 | **[Milestone 2](docs/milestones/milestone-2-sdwan-controller-and-dataplane.md)** | Containerized Dataplane (FRR + WireGuard), Policy Controller, Operations HUD, and Prometheus `/metrics` | **COMPLETE** | `tests/unit/test_controller_policy.py`<br>`src/controller/`, `src/dashboard/` |
 | **[Milestone 3](docs/milestones/milestone-3-airgap-zarf-and-edge-deployment.md)** | Helm Chart (`tactical-sdn`), Zarf Air-Gap Packaging (v0.3.0), UDS Bundle, and In-Place Ship Modernization | **COMPLETE** | `tests/integration/test_zarf_airgap.py`<br>`build/zarf-package-tactical-sdn-stack-amd64-0.3.0.tar.zst` |
 | **[Milestone 4](docs/milestones/milestone-4-ddil-chaos-and-lula-compliance.md)** | DDIL Chaos Resiliency Benchmark (MTTD, Cutover, Packet Survival) & Continuous Lula OSCAL STIG Audits | **COMPLETE** | `tests/integration/test_lula_compliance.py`<br>`docs/benchmarks/failover-resilience-report.md`<br>`compliance/lula/assessment-results.yaml` |
-| **[Milestone 5](docs/milestones/milestone-5-sustainment-security-traceability.md)** | Engineering Rigor, Supply Chain SBOM Traceability, and Defense Unicorns FDE Role Alignment | **IN PROGRESS** | `docs/FDE_SDN_TECHNICAL_MAPPING.md` |
+| **[Milestone 5](docs/milestones/milestone-5-sustainment-security-traceability.md)** | Engineering Rigor, Supply Chain SBOM Traceability, and Defense Unicorns FDE Role Alignment | **COMPLETE** | `docs/FDE_SDN_TECHNICAL_MAPPING.md`<br>`.github/workflows/ci.yml`<br>`compliance/sbom/` |
 
 ---
 
