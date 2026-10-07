@@ -10,20 +10,22 @@ Built for **Denied, Disrupted, Intermittent, and Limited (DDIL)** environments, 
 
 ```mermaid
 flowchart TD
-    subgraph ShoreCloud["Shore Operations / Tactical Cloud Gateway"]
-        AWS_GW["Cloud Shore Gateway\n(FRRouting / WireGuard Mesh)"]
+    subgraph ShoreCloud["Shore Operations / Fleet NOC (Shore Gateway: 10.200.1.10)"]
+        AWS_GW["Shore Hub Gateway\n(FRRouting / Multi-Bearer Ingestion)"]
+        AWS_HUD["Out-of-Band Operations HUD (:8080)\n(Live Telemetry, Modernization Orchestrator, Chaos Controls)"]
         AWS_MON["Prometheus / Grafana\nTelemetry Receiver"]
+        AWS_GW --- AWS_HUD
     end
 
     subgraph ShipboardT5600["Shipboard Core Infrastructure (Dell T5600 Libvirt)"]
         subgraph LegacyCANES["Phase 1: Legacy Baseline"]
-            VM_LEGACY_ROUTER["Legacy Virtual Router\n(Static BGP/OSPF + Rigid Metric Failover)"]
+            VM_LEGACY_ROUTER["Legacy Virtual Router (10.200.1.2)\n(Static BGP/OSPF + Rigid Metric Failover)"]
             VM_LEGACY_ENCLAVE["Ship Enclaves\n(UNCLASS & SECRET Enclaves)"]
         end
 
         subgraph ModernCANES["Phase 2: Modernized Edge SDN (K3s + Zarf)"]
             CNF_ROUTER["Containerized SDN Dataplane\n(FRR + WireGuard Dynamic Multipath)"]
-            SDN_CTRL["SD-WAN Policy & Probing Daemon\n(Dual HTTP/ICMP Probes + Netlink Actuator)"]
+            SDN_CTRL["SD-WAN Policy & Probing Daemon\n(Dual HTTP/ICMP Probes + Netlink Actuator\nPrometheus /metrics & /healthz on :8080)"]
             LULA_AUDIT["Lula Continuous Compliance Agent\n(NIST SP 800-53 / OSCAL Validation)"]
         end
     end
@@ -41,6 +43,7 @@ flowchart TD
     SDN_CTRL --> CNF_ROUTER
     OPI_SDWAN <==>|"Encrypted Overlay Mesh"| CNF_ROUTER
     CNF_ROUTER --> AWS_MON
+    AWS_HUD -.->|"Out-of-Band Telemetry & Orchestration (br-shore-hub)"| CNF_ROUTER
 ```
 
 ---
@@ -97,6 +100,7 @@ flowchart TD
   - [ADR 0005: Agentic AI Workflow and Chaos / DDIL Testing](docs/adr/0005-agentic-ai-workflow-and-chaos-testing.md)
   - [ADR 0006: Helm-Based Configuration Management for Air-Gapped Zarf Deployment](docs/adr/0006-helm-chart-templating-and-zarf-packaging.md)
   - [ADR 0007: Operations HUD Modernization Lifecycle & Interactive Gateway Control](docs/adr/0007-interactive-modernization-dashboard-lifecycle.md)
+  - [ADR 0008: Out-of-Band Management Plane & Separation of Modernization Concerns](docs/adr/0008-out-of-band-management-and-concerns-separation.md)
 * **[Strategic Project Overview](overview.md):** Defense networking challenges, Project Overmatch alignment, and architectural problem framing.
 
 ---
@@ -108,7 +112,7 @@ flowchart TD
 │   ├── lula/                  # Lula OSCAL component definitions, STIG validations, assessment results
 │   └── sbom/                  # Software Bill of Materials (CycloneDX & SPDX 2.3 JSON)
 ├── docs/
-│   ├── adr/                   # Architecture Decision Records (ADRs 0001-0007)
+│   ├── adr/                   # Architecture Decision Records (ADRs 0001-0008)
 │   ├── architecture/          # Legacy vs. Modern SDN comparison & demonstration guide
 │   ├── benchmarks/            # Quantitative chaos resiliency reports and telemetry JSON
 │   └── milestones/            # Project milestones (Milestones 1-5) and validation criteria
@@ -119,8 +123,8 @@ flowchart TD
 │   ├── zarf/                  # Declarative Zarf air-gap package specification (zarf.yaml)
 │   └── uds/                   # UDS Core bundle configuration (uds-bundle.yaml)
 ├── src/
-│   ├── controller/            # Python SD-WAN SLA prober, policy engine, and Netlink route actuator
-│   ├── dashboard/             # Tactical Operations HUD, live SSE stream, and Prometheus /metrics
+│   ├── controller/            # Shipboard SD-WAN SLA prober, policy engine, Netlink actuator & Prometheus exporter
+│   ├── dashboard/             # Shore Operations HUD, modernization orchestrator, and chaos actuation backend
 │   ├── dataplane/             # FRRouting, WireGuard configs, and container definitions
 │   └── traffic/               # C2 streaming traffic generator and shore receiver telemetry utilities
 ├── tests/
@@ -145,12 +149,12 @@ cd ../..
 ```
 
 ### Step 2: Establish Host Access & HUD Tunnel
-Configure SSH aliases and start the background tunnel daemon for the Tactical Operations HUD:
+Configure SSH aliases and start the background tunnel daemon for the Out-of-Band Tactical Operations HUD (hosted on `shore-gateway`):
 ```bash
 ./scripts/setup-ssh.sh
 ./scripts/dashboard-tunnel.sh start
 ```
-Open **`http://localhost:8080`** in a browser to view live multi-bearer metrics, dynamic routing states, and the interactive chaos actuation panel.
+Open **`http://localhost:8080`** in a browser to view live multi-bearer metrics scraped out-of-band from `ship-gateway`, dynamic routing states, the modernization lifecycle orchestrator, and the interactive chaos actuation panel.
 
 ### Step 3: Modernize Shipboard Node to Cloud-Native CNF
 Transition `ship-gateway` from legacy monolithic baseline to air-gapped containerized CNF:

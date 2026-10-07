@@ -22,6 +22,7 @@ In military maritime and expeditionary communications—such as the U.S. Navy's 
 | **Air-Gap Delivery & Lifecycle** | **Ad-Hoc Tarballs & Manual OS Patching**<br>Prone to configuration drift, untracked dependencies, and complex field updates. | **Declarative Zarf Air-Gap Packaging**<br>Single 61MB `.tar.zst` archive embedding Helm chart, pinned container layers, and pre-flight hooks. | 100% offline, deterministic deployments across disconnected ships with zero internet or external registry access. |
 | **Supply Chain & Accreditation (cATO)** | **Opaque Software Baselines**<br>Manual DISA STIG checklists, slow ATO review cycles, unverified open-source libraries. | **Automated Machine-Readable Compliance**<br>Embedded Syft/CycloneDX SBOMs, Trivy vulnerability audits, and declarative Lula OSCAL validation. | Continuous Authority to Operate (cATO) readiness; instant automated compliance sign-off. |
 | **Operational Observability** | **Siloed Logs in `/var/log`**<br>Requires manual SSH / CLI interrogation during link troubleshooting. | **Cloud-Native Metrics & Real-Time HUD**<br>Standard Prometheus `/metrics` exposition on port 8080 and live web dashboard. | Uniform telemetry for Fleet NOCs, shipboard watchstanders, and strike group commanders. |
+| **Management & Orchestration (MANO)** | **Coupled In-Band Management**<br>Management consoles hosted directly on routing appliance; during upgrade/reboot, operator loses all visibility. | **Decoupled Out-of-Band MANO (ADR 0008)**<br>Operations HUD and modernization orchestrator run out-of-band (`shore-gateway`); router runs purely dataplane and telemetry. | Resilient, uninterrupted situational awareness during cutover; zero risk of losing management access mid-upgrade. |
 
 ---
 
@@ -62,7 +63,51 @@ flowchart TD
 
 ---
 
-## 4. Step-by-Step Demonstration Guide
+## 4. Out-of-Band Management & Separation of Concerns (ADR 0008)
+
+A foundational architectural requirement in defense networking (such as U.S. Navy CANES / ADNS) and ETSI NFV MANO standards is the strict decoupling of the **Workload Dataplane** from the **Management and Orchestration Plane (MANO)**.
+
+### The Operational Anti-Pattern: Self-Orchestrated Modernization
+Hosting management UIs, modernization orchestrators, or lifecycle runners directly inside the workload router being modernized creates an operational vulnerability ("the surgeon operating on their own heart"):
+1. **Loss of Situational Awareness**: When the router undergoes kernel reconfiguration, K3s bootstrapping, or container cutover, the management UI drops offline precisely when operators require real-time visibility.
+2. **Blast Radius Expansion**: Network interface flapping or daemon crashes on the router take down the operator control plane, stranding the node in an unrecoverable half-configured state.
+3. **Bloated Workload Footprint**: Embedding web servers, UI templates, and deployment utilities into the shipboard router increases image size and expands the NIST SP 800-53 attack surface.
+
+### The Modernized Architecture: Decoupled Shore Orchestrator & Ship Dataplane
+
+```mermaid
+flowchart TD
+    subgraph OOB_MGMT ["Fleet NOC / Out-of-Band Management (shore-gateway: 10.200.1.10)"]
+        HUD["Tactical Operations HUD (:8080)\n• Real-Time Multi-Bearer Telemetry\n• Interactive DDIL Chaos Actuator\n• Modernization Orchestrator"]
+        ORCH["Modernization Runner\n(scripts/modernize-ship-node.sh)"]
+        HUD --- ORCH
+    end
+
+    subgraph SHIP_GATEWAY ["Shipboard Gateway Plane (ship-gateway: 10.200.1.2)"]
+        direction TB
+        subgraph DAY0 ["Day 0: Legacy VNF"]
+            VNF_RT["Static Route Forwarding + NAT"]
+            VNF_EXP["Telemetry Exporter (:8080 /metrics & /api/status)"]
+        end
+        subgraph DAY1 ["Day 1+: Modernized CNF"]
+            K3S["Air-Gapped K3s Cluster"]
+            CNF["tactical-sdn Pod\n(FRR + WireGuard + SLA Prober)"]
+            CNF_EXP["Prometheus /metrics & /healthz (:8080)"]
+        end
+    end
+
+    %% Out-of-Band Interactions
+    HUD -.->|"Scrapes Telemetry (br-shore-hub)"| VNF_EXP
+    HUD -.->|"Scrapes Telemetry (br-shore-hub)"| CNF_EXP
+    ORCH -.->|"Out-of-Band SSH Lifecycle Control"| SHIP_GATEWAY
+```
+
+- **`ship-gateway` (`10.200.1.2`)**: Pure network forwarding node. Runs either the Day 0 legacy router or the Day 1+ containerized SD-WAN CNF pod. It exposes only lightweight `/metrics` (Prometheus) and `/api/status` / `/healthz` endpoints.
+- **`shore-gateway` (`10.200.1.10`)**: Out-of-band management hub. Runs `shore-dashboard.service` on port 8080, continuously scraping telemetry from `ship-gateway` over the isolated `br-shore-hub` backbone, providing DDIL chaos actuation, and orchestrating modernization transitions via SSH without interruption.
+
+---
+
+## 5. Step-by-Step Demonstration Guide
 
 This walkthrough demonstrates how an evaluator can observe the superiority of the modernized CNF stack using the built-in Tactical Operations HUD and chaos injection harness.
 
@@ -71,7 +116,7 @@ Ensure the persistent HUD tunnel is active on the host:
 ```bash
 ./scripts/dashboard-tunnel.sh status
 ```
-Open **`http://localhost:8080`** in a browser.
+Open **`http://localhost:8080`** in a browser (connected out-of-band to `shore-gateway:8080`).
 
 * **Observed Baseline:**
   - **P-LEO:** Metric `10`, State `HEALTHY (Green)` -> **[ACTIVE PRIMARY]**
@@ -116,7 +161,7 @@ Click **"Restore Clean Baseline"** on the dashboard (or run `./tests/chaos/impai
 
 ---
 
-## 5. Deployment & Lifecycle Guide: From Legacy to Modernized
+## 6. Deployment & Lifecycle Guide: From Legacy to Modernized
 
 This section provides the end-to-end operational instructions to deploy the lab from scratch in its **Legacy Baseline Posture**, access the HUD, and then run the **Modernization Workflow** to transition to the cloud-native CNF stack.
 
@@ -130,7 +175,7 @@ This section provides the end-to-end operational instructions to deploy the lab 
    tofu apply -auto-approve
    cd ../..
    ```
-   *At boot, `ship-gateway` automatically enables and runs the legacy systemd service (`sdwan-controller.service`) directly on the bare VM OS.*
+   *At boot, `ship-gateway` automatically enables and runs the legacy systemd service (`sdwan-controller.service`) directly on the bare VM OS, while `shore-gateway` starts the Out-of-Band Operations HUD (`shore-dashboard.service`).*
 
 2. **Establish Host Access & Verify Nodes:**
    Run the SSH setup script to configure host aliases in `~/.ssh/config`:
@@ -145,15 +190,15 @@ This section provides the end-to-end operational instructions to deploy the lab 
    # active
    ```
 
-3. **Access the Tactical Operations HUD (Legacy Mode):**
+3. **Access the Tactical Operations HUD (Out-of-Band Legacy Mode):**
    Start the background tunnel daemon from your workstation:
    ```bash
    ./scripts/dashboard-tunnel.sh start
    ```
-   The dashboard tunnel forwards `0.0.0.0:8080` through the hypervisor to `ship-gateway:8080`.
+   The dashboard tunnel forwards `0.0.0.0:8080` through the hypervisor to `shore-gateway:8080` (Fleet NOC Out-of-Band Management).
    Open **`http://localhost:8080`** in your browser.
    - **Day 0 Baseline Visualization:** The HUD displays the gateway as `LEGACY ROUTER 10.200.1.2 (VNF)` in amber with the `STAGE 1: DAY 0 BASELINE` stepper active.
-   - **Observability:** Telemetry and live link metrics stream directly from the bare VM controller while illustrating gray-failure susceptibility under static routing.
+   - **Out-of-Band Telemetry:** The HUD polls `ship-gateway:8080/api/status` across the `br-shore-hub` backbone (`10.200.1.0/24`), displaying live link metrics while the bare VM controller operates under static routing.
 
 ---
 
@@ -169,12 +214,12 @@ To transition `ship-gateway` from the legacy monolithic VNF architecture to the 
 
 2. **Execute In-Place Modernization (Interactive HUD or CLI):**
    
-   #### Option A: One-Click Modernization via Operations HUD
+   #### Option A: One-Click Modernization via Out-of-Band Operations HUD
    In your browser at **`http://localhost:8080`**, utilize the **Modernization Lifecycle Panel**:
-   - **Step 1: Bootstrap K3s**: Starts K3s in the background with zero routing downtime for active enclaves.
+   - **Step 1: Bootstrap K3s**: Starts K3s out-of-band via SSH with zero routing downtime for active enclaves.
    - **Step 2: Init Zarf Registry**: Initializes the offline in-cluster seed registry (`zarf-docker-registry`) and mutating webhook agents.
    - **Step 3: Atomic Hot Cutover**: Deploys the containerized SD-WAN CNF DaemonSet and atomically retires the legacy routing service once the pod reports healthy.
-   *(Or click **"Full Autonomous Upgrade"** to trigger the complete transition automatically).*
+   *(Or click **"Full Autonomous Upgrade"** to trigger the complete transition automatically, streaming live logs to the HUD).*
 
    #### Option B: Automated CLI Modernization Pipeline
    ```bash
@@ -194,16 +239,16 @@ To transition `ship-gateway` from the legacy monolithic VNF architecture to the 
    *Confirms:*
    - The `tactical-sdn` DaemonSet pod is `Running` on `ship-gateway`.
    - The `tactical-sdn-telemetry` Kubernetes service is active.
-   - Prometheus metrics are scraping live from `http://127.0.0.1:8080/metrics`.
+   - Prometheus metrics are scraping live from `http://10.200.1.2:8080/metrics`.
    - Continuous bidirectional traffic is flowing between `enclave-client` and `shore-gateway`.
 
 4. **Access the Tactical Operations HUD (Modernized Mode):**
-   The persistent tunnel remains identical:
+   The persistent tunnel remains uninterrupted:
    ```bash
    ./scripts/dashboard-tunnel.sh status
    ```
    Refresh **`http://localhost:8080`** in your browser.
    - **Modernized Day 2 State:** The HUD topology transforms into `SD-WAN CNF 10.200.1.2 (K3s)` in cyan with `STAGE 4: CLOUD-NATIVE CNF ACTIVE` in green.
-   - **Port Consistency:** The containerized CNF inherits host-networking (`hostNetwork: true`), allowing the same port 8080 tunnel to seamlessly serve the HUD without reconfiguring ports or SSH proxies.
-   - **Container-Aware Actuation:** Dynamic SLA path steering and chaos injection buttons (Cut P-LEO, Degrade MILSAT, Restore Clean) execute directly inside the container pod using bounded `NET_ADMIN` Linux capabilities.
+   - **Uninterrupted Operations:** Because the HUD runs out-of-band on `shore-gateway`, operator situational awareness never degraded during the K3s bootstrap or pod cutover.
+   - **Container-Aware Actuation:** Dynamic SLA path steering and chaos injection buttons (Cut P-LEO, Degrade MILSAT, Restore Clean) execute directly across the bearer interfaces and inside the container pod using bounded `NET_ADMIN` Linux capabilities.
 

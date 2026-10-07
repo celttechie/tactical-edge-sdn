@@ -76,12 +76,13 @@ resource "libvirt_cloudinit_disk" "cloudinit_router" {
   name = "ship-gateway-cloudinit.iso"
   pool = var.storage_pool
   user_data = templatefile("${path.module}/templates/cloud_init_router.cfg", {
-    hostname          = "ship-gateway"
-    admin_username    = var.admin_username
-    ssh_public_key    = file(pathexpand(var.ssh_public_key_path))
-    host_private_key  = tls_private_key.router_host_key.private_key_openssh
-    host_public_key   = tls_private_key.router_host_key.public_key_openssh
-    app_zip_b64       = data.archive_file.app_bundle.output_base64sha256 != "" ? filebase64(data.archive_file.app_bundle.output_path) : ""
+    hostname             = "ship-gateway"
+    admin_username       = var.admin_username
+    ssh_public_key       = file(pathexpand(var.ssh_public_key_path))
+    shore_ssh_public_key = tls_private_key.shore_host_key.public_key_openssh
+    host_private_key     = tls_private_key.router_host_key.private_key_openssh
+    host_public_key      = tls_private_key.router_host_key.public_key_openssh
+    app_zip_b64          = data.archive_file.app_bundle.output_base64sha256 != "" ? filebase64(data.archive_file.app_bundle.output_path) : ""
   })
   network_config = templatefile("${path.module}/templates/network_config_router.cfg", {})
 }

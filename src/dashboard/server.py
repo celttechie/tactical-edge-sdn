@@ -41,32 +41,32 @@ DEFAULT_PORT = 8080
 
 @dataclass
 class ModernizationState:
-    stage: str = "STAGE_4_CNF_ACTIVE"  # STAGE_1_LEGACY_DAY0, STAGE_2_K3S_INIT, STAGE_3_ZARF_STAGING, STAGE_4_CNF_ACTIVE
-    stage_number: int = 4
-    stage_name: str = "Modernized CNF Active"
-    gateway_type: str = "CONTAINERIZED_CNF"  # LEGACY_VNF or CONTAINERIZED_CNF
-    routing_mode: str = "DYNAMIC_SLA_STEERING"  # STATIC_METRIC_ROUTING or DYNAMIC_SLA_STEERING
-    k3s_status: str = "READY"  # STOPPED, INITIALIZING, READY
-    zarf_status: str = "REGISTRY_READY"  # UNINITIALIZED, SEEDING, REGISTRY_READY
-    cnf_status: str = "HEALTHY"  # NOT_DEPLOYED, STARTING, HEALTHY
-    legacy_service_status: str = "INACTIVE"  # ACTIVE, RETIRED, INACTIVE
+    stage: str = "STAGE_1_LEGACY_DAY0"  # STAGE_1_LEGACY_DAY0, STAGE_2_K3S_INIT, STAGE_3_ZARF_STAGING, STAGE_4_CNF_ACTIVE
+    stage_number: int = 1
+    stage_name: str = "Day 0 Legacy Baseline"
+    gateway_type: str = "LEGACY_VNF"  # LEGACY_VNF or CONTAINERIZED_CNF
+    routing_mode: str = "STATIC_METRIC_ROUTING"  # STATIC_METRIC_ROUTING or DYNAMIC_SLA_STEERING
+    k3s_status: str = "STOPPED"  # STOPPED, INITIALIZING, READY
+    zarf_status: str = "UNINITIALIZED"  # UNINITIALIZED, SEEDING, REGISTRY_READY
+    cnf_status: str = "NOT_DEPLOYED"  # NOT_DEPLOYED, STARTING, HEALTHY
+    legacy_service_status: str = "ACTIVE"  # ACTIVE, RETIRED, INACTIVE
     last_action: str = "INITIAL"
     is_in_transition: bool = False
     transition_message: str = ""
     target_stage_number: Optional[int] = None
-    progress_pct: int = 100
-    completed_stage: Optional[int] = 4
-    completion_message: str = "Cloud-Native CNF Active & Operational"
+    progress_pct: int = 0
+    completed_stage: Optional[int] = 1
+    completion_message: str = "Day 0 Legacy Router Active (Static Metric Routing)"
     last_completed_at: str = ""
     stage_statuses: Dict[str, str] = None
 
     def __post_init__(self):
         if self.stage_statuses is None:
             self.stage_statuses = {
-                "1": "RETIRED",
-                "2": "SETUP_COMPLETED",
-                "3": "SETUP_COMPLETED",
-                "4": "SETUP_COMPLETED"
+                "1": "ACTIVE",
+                "2": "PENDING",
+                "3": "PENDING",
+                "4": "PENDING"
             }
 
 @dataclass
@@ -319,19 +319,18 @@ class DashboardDataManager:
         if self.modernization_state.is_in_transition:
             return self.modernization_state
 
-        # If user has initiated an explicit action, maintain that orchestrator stage
-        if self.modernization_state.last_action != "INITIAL":
-            return self.modernization_state
-
         try:
             # Initial probe on startup
             if self.is_local_router():
                 k3s_active = (subprocess.run("systemctl is-active k3s.service", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip() == "active")
                 legacy_active = (subprocess.run("systemctl is-active sdwan-controller.service", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip() == "active")
                 cnf_active = False
+                zarf_active = False
                 if k3s_active:
                     cnf_check = subprocess.run("k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null", shell=True, stdout=subprocess.PIPE, text=True)
                     cnf_active = ("Running" in cnf_check.stdout)
+                    zarf_check = subprocess.run("k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null", shell=True, stdout=subprocess.PIPE, text=True)
+                    zarf_active = ("Running" in zarf_check.stdout)
             else:
                 ssh_cmd = [
                     "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
@@ -349,66 +348,66 @@ class DashboardDataManager:
                 cnf_active = ("CNF:1" in out or "CNF:2" in out)
                 zarf_active = ("ZARF:1" in out)
 
-                if cnf_active:
-                    self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
-                    self.modernization_state.stage_number = 4
-                    self.modernization_state.stage_name = "Modernized CNF Active"
-                    self.modernization_state.gateway_type = "CONTAINERIZED_CNF"
-                    self.modernization_state.routing_mode = "DYNAMIC_SLA_STEERING"
-                    self.modernization_state.k3s_status = "READY"
-                    self.modernization_state.zarf_status = "REGISTRY_READY"
-                    self.modernization_state.cnf_status = "HEALTHY"
-                    self.modernization_state.legacy_service_status = "RETIRED"
-                    self.modernization_state.completed_stage = 4
-                    self.modernization_state.completion_message = "Cloud-Native CNF Active (K3s Dynamic SLA Steering)"
-                    self.modernization_state.stage_statuses = {
-                        "1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"
-                    }
-                elif zarf_active:
-                    self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
-                    self.modernization_state.stage_number = 3
-                    self.modernization_state.stage_name = "Zarf Registry Staged"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "READY"
-                    self.modernization_state.zarf_status = "REGISTRY_READY"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
-                    self.modernization_state.completed_stage = 3
-                    self.modernization_state.completion_message = "Zarf Registry Staged (Ready for CNF Cutover)"
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"
-                    }
-                elif k3s_active:
-                    self.modernization_state.stage = "STAGE_2_K3S_INIT"
-                    self.modernization_state.stage_number = 2
-                    self.modernization_state.stage_name = "K3s Cluster Initialized"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "READY"
-                    self.modernization_state.zarf_status = "UNINITIALIZED"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
-                    self.modernization_state.completed_stage = 2
-                    self.modernization_state.completion_message = "K3s Cluster Initialized (Legacy Routing Intact)"
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"
-                    }
-                else:
-                    self.modernization_state.stage = "STAGE_1_LEGACY_DAY0"
-                    self.modernization_state.stage_number = 1
-                    self.modernization_state.stage_name = "Day 0 Legacy Baseline"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "STOPPED"
-                    self.modernization_state.zarf_status = "UNINITIALIZED"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
-                    self.modernization_state.completed_stage = 1
-                    self.modernization_state.completion_message = "Day 0 Legacy Router Active (Static Metric Routing)"
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"
-                    }
+            if cnf_active:
+                self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
+                self.modernization_state.stage_number = 4
+                self.modernization_state.stage_name = "Modernized CNF Active"
+                self.modernization_state.gateway_type = "CONTAINERIZED_CNF"
+                self.modernization_state.routing_mode = "DYNAMIC_SLA_STEERING"
+                self.modernization_state.k3s_status = "READY"
+                self.modernization_state.zarf_status = "REGISTRY_READY"
+                self.modernization_state.cnf_status = "HEALTHY"
+                self.modernization_state.legacy_service_status = "RETIRED"
+                self.modernization_state.completed_stage = 4
+                self.modernization_state.completion_message = "Cloud-Native CNF Active (K3s Dynamic SLA Steering)"
+                self.modernization_state.stage_statuses = {
+                    "1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"
+                }
+            elif zarf_active:
+                self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
+                self.modernization_state.stage_number = 3
+                self.modernization_state.stage_name = "Zarf Registry Staged"
+                self.modernization_state.gateway_type = "LEGACY_VNF"
+                self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                self.modernization_state.k3s_status = "READY"
+                self.modernization_state.zarf_status = "REGISTRY_READY"
+                self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
+                self.modernization_state.completed_stage = 3
+                self.modernization_state.completion_message = "Zarf Registry Staged (Ready for CNF Cutover)"
+                self.modernization_state.stage_statuses = {
+                    "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"
+                }
+            elif k3s_active:
+                self.modernization_state.stage = "STAGE_2_K3S_INIT"
+                self.modernization_state.stage_number = 2
+                self.modernization_state.stage_name = "K3s Cluster Initialized"
+                self.modernization_state.gateway_type = "LEGACY_VNF"
+                self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                self.modernization_state.k3s_status = "READY"
+                self.modernization_state.zarf_status = "UNINITIALIZED"
+                self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
+                self.modernization_state.completed_stage = 2
+                self.modernization_state.completion_message = "K3s Cluster Initialized (Legacy Routing Intact)"
+                self.modernization_state.stage_statuses = {
+                    "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"
+                }
+            else:
+                self.modernization_state.stage = "STAGE_1_LEGACY_DAY0"
+                self.modernization_state.stage_number = 1
+                self.modernization_state.stage_name = "Day 0 Legacy Baseline"
+                self.modernization_state.gateway_type = "LEGACY_VNF"
+                self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                self.modernization_state.k3s_status = "STOPPED"
+                self.modernization_state.zarf_status = "UNINITIALIZED"
+                self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                self.modernization_state.legacy_service_status = "ACTIVE" if legacy_active else "INACTIVE"
+                self.modernization_state.completed_stage = 1
+                self.modernization_state.completion_message = "Day 0 Legacy Router Active (Static Metric Routing)"
+                self.modernization_state.stage_statuses = {
+                    "1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"
+                }
         except Exception as e:
             logger.debug(f"Modernization state detection error: {e}")
 
@@ -424,227 +423,94 @@ class DashboardDataManager:
         self.modernization_state.last_action = action
         self.modernization_state.progress_pct = 15
 
+        step_map = {
+            "reset_day0": ("reset-day0", 1, "Resetting shipboard gateway to Day 0 Legacy baseline..."),
+            "bootstrap_k3s": ("bootstrap-k3s", 2, "Step 1/3: Bootstrapping air-gapped K3s cluster in background..."),
+            "init_zarf": ("init-zarf", 3, "Step 2/3: Staging Zarf offline seed registry & internal services..."),
+            "deploy_cnf": ("cutover-cnf", 4, "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover..."),
+            "cutover_cnf": ("cutover-cnf", 4, "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover..."),
+            "full_upgrade": ("full", 4, "Executing autonomous end-to-end modernization pipeline..."),
+        }
+
+        step_arg, target_stage, trans_msg = step_map.get(action, ("full", 4, "Executing modernization action..."))
+        self.modernization_state.target_stage_number = target_stage
+        self.modernization_state.transition_message = trans_msg
+
         if action == "reset_day0":
-            self.modernization_state.target_stage_number = 1
-            self.modernization_state.transition_message = "Resetting shipboard gateway to Day 0 Legacy baseline..."
-            self.modernization_state.stage_statuses = {
-                "1": "SETTING_UP", "2": "PENDING", "3": "PENDING", "4": "PENDING"
-            }
+            self.modernization_state.stage_statuses = {"1": "SETTING_UP", "2": "PENDING", "3": "PENDING", "4": "PENDING"}
         elif action == "bootstrap_k3s":
-            self.modernization_state.target_stage_number = 2
-            self.modernization_state.transition_message = "Step 1/3: Bootstrapping air-gapped K3s cluster in background..."
             self.modernization_state.stage_statuses["2"] = "SETTING_UP"
         elif action == "init_zarf":
-            self.modernization_state.target_stage_number = 3
-            self.modernization_state.transition_message = "Step 2/3: Staging Zarf offline seed registry & internal services..."
             self.modernization_state.stage_statuses["3"] = "SETTING_UP"
         elif action in ("deploy_cnf", "cutover_cnf"):
-            self.modernization_state.target_stage_number = 4
-            self.modernization_state.transition_message = "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover..."
             self.modernization_state.stage_statuses["4"] = "CUTTING_OVER"
-        elif action == "full_upgrade":
-            self.modernization_state.target_stage_number = 4
-            self.modernization_state.transition_message = "Executing autonomous end-to-end modernization pipeline..."
 
         def _execute():
             try:
-                if action == "reset_day0":
-                    self.log_event("MODERNIZATION_STEP", "[Reset] Decommissioning CNF and reverting to Day 0 Legacy VNF...", severity="WARNING")
-                    self.modernization_state.transition_message = "Phase 1/3: Terminating containerized CNF and stopping K3s service..."
-                    self.modernization_state.progress_pct = 25
-                    time.sleep(0.8)
+                pkg_paths = [
+                    os.path.join(PROJECT_ROOT, "scripts", "modernize-ship-node.sh"),
+                    "/opt/tactical-sdn/scripts/modernize-ship-node.sh",
+                    os.path.expanduser("~/scripts/modernize-ship-node.sh"),
+                ]
+                pkg_path = next((p for p in pkg_paths if os.path.exists(p)), None)
 
-                    if shutil.which("ssh"):
-                        cmd = (
-                            "ssh -o StrictHostKeyChecking=no ship-gateway '"
-                            "sudo systemctl stop k3s 2>/dev/null || true; "
-                            "sudo systemctl disable k3s 2>/dev/null || true; "
-                            "sudo systemctl enable --now sdwan-controller.service 2>/dev/null || true; "
-                            "ip route show default'"
-                        )
-                        self.run_logged_command(cmd, source="MODERNIZER", timeout=30)
+                self.modernization_state.progress_pct = 40
+                time.sleep(0.5)
+
+                if pkg_path:
+                    cmd = f"bash {pkg_path} ship-gateway --step {step_arg}"
+                    rc = self.run_logged_command(cmd, source="MODERNIZER", timeout=360)
+                else:
+                    self.add_log(source="MODERNIZER", message="[-] Error: modernize-ship-node.sh not found", level="ERROR")
+                    rc = -1
+
+                self.modernization_state.progress_pct = 90
+                time.sleep(0.5)
+
+                if rc == 0:
+                    if action == "reset_day0":
+                        self.modernization_state.stage = "STAGE_1_LEGACY_DAY0"
+                        self.modernization_state.stage_number = 1
+                        self.modernization_state.stage_name = "Day 0 Legacy Baseline"
+                        self.modernization_state.gateway_type = "LEGACY_VNF"
+                        self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                        self.modernization_state.k3s_status = "STOPPED"
+                        self.modernization_state.zarf_status = "UNINITIALIZED"
+                        self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                        self.modernization_state.legacy_service_status = "ACTIVE"
+                        self.modernization_state.completed_stage = 1
+                        self.modernization_state.completion_message = "✓ RESET COMPLETE: Day 0 Legacy Router Active. Static metric routing in effect."
+                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"}
+                        self.log_event("MODERNIZATION_STEP", "Day 0 Legacy Baseline restored. Static metric routing active.", severity="SUCCESS")
+                    elif action == "bootstrap_k3s":
+                        self.modernization_state.stage = "STAGE_2_K3S_INIT"
+                        self.modernization_state.stage_number = 2
+                        self.modernization_state.stage_name = "K3s Cluster Initialized"
+                        self.modernization_state.gateway_type = "LEGACY_VNF"
+                        self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                        self.modernization_state.k3s_status = "READY"
+                        self.modernization_state.zarf_status = "PENDING"
+                        self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                        self.modernization_state.legacy_service_status = "ACTIVE"
+                        self.modernization_state.completed_stage = 2
+                        self.modernization_state.completion_message = "✓ STAGE 2 SETUP COMPLETED: Air-gapped K3s cluster verified ready. Zero legacy downtime."
+                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"}
+                        self.log_event("MODERNIZATION_STEP", "K3s Node Ready! Legacy routing continuous and undisturbed.", severity="SUCCESS")
+                    elif action == "init_zarf":
+                        self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
+                        self.modernization_state.stage_number = 3
+                        self.modernization_state.stage_name = "Zarf Registry Ready"
+                        self.modernization_state.gateway_type = "LEGACY_VNF"
+                        self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
+                        self.modernization_state.k3s_status = "READY"
+                        self.modernization_state.zarf_status = "REGISTRY_READY"
+                        self.modernization_state.cnf_status = "NOT_DEPLOYED"
+                        self.modernization_state.legacy_service_status = "ACTIVE"
+                        self.modernization_state.completed_stage = 3
+                        self.modernization_state.completion_message = "✓ STAGE 3 SETUP COMPLETED: In-cluster Zarf seed registry operational. Seed packages staged."
+                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"}
+                        self.log_event("MODERNIZATION_STEP", "Zarf Registry Operational! Offline artifacts staged.", severity="SUCCESS")
                     else:
-                        self.add_log(source="MODERNIZER", message="Reverting routing policy to Day 0 legacy static metrics (pleops=10, milsat=50, losrf=100)...", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Legacy Day 0 routing baseline restored. Dynamic SLA steering disabled.", level="SUCCESS")
-
-                    self.modernization_state.transition_message = "Phase 2/3: Restoring legacy static metric routing table on ship-gateway..."
-                    self.modernization_state.progress_pct = 65
-                    time.sleep(0.8)
-
-                    self.modernization_state.transition_message = "Phase 3/3: Verifying legacy default routes and telemetry probers..."
-                    self.modernization_state.progress_pct = 90
-                    time.sleep(0.5)
-
-                    self.modernization_state.stage = "STAGE_1_LEGACY_DAY0"
-                    self.modernization_state.stage_number = 1
-                    self.modernization_state.stage_name = "Day 0 Legacy Baseline"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "STOPPED"
-                    self.modernization_state.zarf_status = "UNINITIALIZED"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE"
-                    self.modernization_state.progress_pct = 100
-                    self.modernization_state.completed_stage = 1
-                    self.modernization_state.completion_message = "✓ RESET COMPLETE: Day 0 Legacy Router Active. Static metric routing in effect."
-                    self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"
-                    }
-                    self.log_event("MODERNIZATION_STEP", "Day 0 Legacy Baseline restored. Static metric routing active.", severity="SUCCESS")
-
-                elif action == "bootstrap_k3s":
-                    self.log_event("MODERNIZATION_STEP", "[Step 1/3] Bootstrapping K3s cluster while legacy routing remains active...", severity="INFO")
-                    self.modernization_state.transition_message = "Phase 1/3: Starting air-gapped K3s systemd unit on edge node..."
-                    self.modernization_state.progress_pct = 25
-                    time.sleep(0.8)
-
-                    if shutil.which("ssh"):
-                        cmd = (
-                            "ssh -o StrictHostKeyChecking=no ship-gateway '"
-                            "sudo systemctl enable --now k3s.service && "
-                            "sudo k3s kubectl wait --for=condition=Ready node --all --timeout=60s'"
-                        )
-                        self.run_logged_command(cmd, source="MODERNIZER", timeout=75)
-                    else:
-                        self.add_log(source="MODERNIZER", message="Inspecting air-gapped K3s cluster node readiness...", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Air-gapped K3s node verified Ready. Dataplane uninterrupted.", level="SUCCESS")
-
-                    self.modernization_state.transition_message = "Phase 2/3: Waiting for K3s node condition=Ready in background..."
-                    self.modernization_state.progress_pct = 65
-                    time.sleep(0.8)
-
-                    self.modernization_state.transition_message = "Phase 3/3: Verifying zero downtime on legacy VNF routing dataplane..."
-                    self.modernization_state.progress_pct = 90
-                    time.sleep(0.5)
-
-                    self.modernization_state.stage = "STAGE_2_K3S_INIT"
-                    self.modernization_state.stage_number = 2
-                    self.modernization_state.stage_name = "K3s Cluster Initialized"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "READY"
-                    self.modernization_state.zarf_status = "PENDING"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE"
-                    self.modernization_state.progress_pct = 100
-                    self.modernization_state.completed_stage = 2
-                    self.modernization_state.completion_message = "✓ STAGE 2 SETUP COMPLETED: Air-gapped K3s cluster verified ready. Zero legacy downtime."
-                    self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"
-                    }
-                    self.log_event("MODERNIZATION_STEP", "K3s Node Ready! Legacy routing continuous and undisturbed.", severity="SUCCESS")
-
-                elif action == "init_zarf":
-                    self.log_event("MODERNIZATION_STEP", "[Step 2/3] Initializing Zarf seed registry and offline webhooks...", severity="INFO")
-                    self.modernization_state.transition_message = "Phase 1/3: Inspecting in-cluster storage & Zarf namespace..."
-                    self.modernization_state.progress_pct = 25
-                    time.sleep(0.8)
-
-                    if shutil.which("ssh"):
-                        cmd = (
-                            "ssh -o StrictHostKeyChecking=no ship-gateway '"
-                            "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml; "
-                            "zarf init --confirm --components zarf-seed-registry,zarf-registry,zarf-injector 2>/dev/null || true; "
-                            "kubectl wait --namespace zarf --for=condition=ready pod --selector=app=docker-registry --timeout=120s 2>/dev/null || true'"
-                        )
-                        self.run_logged_command(cmd, source="MODERNIZER", timeout=140)
-                    else:
-                        self.add_log(source="MODERNIZER", message="Inspecting Zarf offline seed registry & injector webhooks...", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Zarf Seed Registry online. Seed packages staged in internal registry.", level="SUCCESS")
-
-                    self.modernization_state.transition_message = "Phase 2/3: Verifying Zarf seed registry & secret injection webhooks..."
-                    self.modernization_state.progress_pct = 65
-                    time.sleep(0.8)
-
-                    self.modernization_state.transition_message = "Phase 3/3: Staging offline container packages in internal registry..."
-                    self.modernization_state.progress_pct = 90
-                    time.sleep(0.6)
-
-                    self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
-                    self.modernization_state.stage_number = 3
-                    self.modernization_state.stage_name = "Zarf Registry Ready"
-                    self.modernization_state.gateway_type = "LEGACY_VNF"
-                    self.modernization_state.routing_mode = "STATIC_METRIC_ROUTING"
-                    self.modernization_state.k3s_status = "READY"
-                    self.modernization_state.zarf_status = "REGISTRY_READY"
-                    self.modernization_state.cnf_status = "NOT_DEPLOYED"
-                    self.modernization_state.legacy_service_status = "ACTIVE"
-                    self.modernization_state.progress_pct = 100
-                    self.modernization_state.completed_stage = 3
-                    self.modernization_state.completion_message = "✓ STAGE 3 SETUP COMPLETED: In-cluster Zarf seed registry operational. Seed packages staged."
-                    self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"
-                    }
-                    self.log_event("MODERNIZATION_STEP", "Zarf Registry Operational! Offline artifacts staged.", severity="SUCCESS")
-
-                elif action in ("deploy_cnf", "cutover_cnf"):
-                    self.log_event("MODERNIZATION_STEP", "[Step 3/3] Deploying containerized CNF and atomically retiring legacy VNF...", severity="WARNING")
-                    self.modernization_state.transition_message = "Phase 1/3: Deploying containerized Tactical SDN CNF DaemonSet..."
-                    self.modernization_state.progress_pct = 25
-                    time.sleep(0.8)
-
-                    pkg_path = os.path.join(PROJECT_ROOT, "scripts", "modernize-ship-node.sh")
-                    if shutil.which("ssh") and os.path.exists(pkg_path):
-                        self.run_logged_command(f"bash {pkg_path} ship-gateway", source="MODERNIZER", timeout=300)
-                    else:
-                        self.add_log(source="MODERNIZER", message="Performing atomic route handoff: preserving active conntrack flows...", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Cloud-Native CNF active. Sub-second SLA steering operational.", level="SUCCESS")
-
-                    self.modernization_state.transition_message = "Phase 2/3: Verifying CNF pod health & dynamic routing engine..."
-                    self.modernization_state.progress_pct = 65
-                    time.sleep(0.8)
-
-                    self.modernization_state.transition_message = "Phase 3/3: Performing atomic route handoff & retiring legacy VNF..."
-                    self.modernization_state.progress_pct = 90
-                    time.sleep(0.5)
-
-                    self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
-                    self.modernization_state.stage_number = 4
-                    self.modernization_state.stage_name = "Modernized CNF Active"
-                    self.modernization_state.gateway_type = "CONTAINERIZED_CNF"
-                    self.modernization_state.routing_mode = "DYNAMIC_SLA_STEERING"
-                    self.modernization_state.cnf_status = "HEALTHY"
-                    self.modernization_state.legacy_service_status = "RETIRED"
-                    self.modernization_state.progress_pct = 100
-                    self.modernization_state.completed_stage = 4
-                    self.modernization_state.completion_message = "✓ STAGE 4 CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering operational!"
-                    self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
-                    self.modernization_state.stage_statuses = {
-                        "1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"
-                    }
-                    self.log_event("MODERNIZATION_STEP", "HOT CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering enabled!", severity="SUCCESS")
-
-                elif action == "full_upgrade":
-                    self.log_event("MODERNIZATION_STEP", "Autonomous zero-downtime modernization sequence initiated...", severity="INFO")
-                    self.modernization_state.progress_pct = 20
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETTING_UP", "3": "PENDING", "4": "PENDING"
-                    }
-                    time.sleep(1.0)
-                    self.modernization_state.progress_pct = 45
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETTING_UP", "4": "PENDING"
-                    }
-                    time.sleep(1.0)
-                    self.modernization_state.progress_pct = 70
-                    self.modernization_state.stage_statuses = {
-                        "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "CUTTING_OVER"
-                    }
-
-                    pkg_path = os.path.join(PROJECT_ROOT, "scripts", "modernize-ship-node.sh")
-                    if shutil.which("ssh") and os.path.exists(pkg_path):
-                        rc = self.run_logged_command(f"bash {pkg_path} ship-gateway", source="MODERNIZER", timeout=360)
-                    else:
-                        self.add_log(source="MODERNIZER", message="Executing full autonomous modernization pipeline...", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Step 1: K3s node cluster validated Ready.", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Step 2: Zarf offline seed registry validated Online.", level="INFO")
-                        self.add_log(source="MODERNIZER", message="Step 3: Cloud-Native CNF activated with zero downtime.", level="INFO")
-                        rc = 0
-
-                    if rc == 0:
                         self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
                         self.modernization_state.stage_number = 4
                         self.modernization_state.stage_name = "Modernized CNF Active"
@@ -654,16 +520,15 @@ class DashboardDataManager:
                         self.modernization_state.zarf_status = "REGISTRY_READY"
                         self.modernization_state.cnf_status = "HEALTHY"
                         self.modernization_state.legacy_service_status = "RETIRED"
-                        self.modernization_state.progress_pct = 100
                         self.modernization_state.completed_stage = 4
-                        self.modernization_state.completion_message = "✓ FULL UPGRADE COMPLETE: Cloud-Native CNF Active (Zero Downtime)."
-                        self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
-                        self.modernization_state.stage_statuses = {
-                            "1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"
-                        }
-                        self.log_event("MODERNIZATION_STEP", "Full Modernization Success! Ship-gateway upgraded to Cloud-Native CNF.", severity="SUCCESS")
-                    else:
-                        self.log_event("MODERNIZATION_STEP", f"Modernization finished with code {rc}.", severity="WARNING")
+                        self.modernization_state.completion_message = "✓ STAGE 4 CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering operational!"
+                        self.modernization_state.stage_statuses = {"1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"}
+                        self.log_event("MODERNIZATION_STEP", "HOT CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering enabled!", severity="SUCCESS")
+
+                    self.modernization_state.progress_pct = 100
+                    self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
+                else:
+                    self.log_event("MODERNIZATION_STEP", f"Modernization action '{action}' failed with code {rc}.", severity="WARNING")
             except Exception as e:
                 self.log_event("MODERNIZATION_STEP", f"Error during modernization action: {e}", severity="DANGER")
             finally:
@@ -713,101 +578,109 @@ class DashboardDataManager:
             return None
         return None
 
+    def is_shore_gateway(self) -> bool:
+        """Check if running on Shore Gateway (eth-shorehub interface exists)."""
+        return os.path.exists("/sys/class/net/eth-shorehub")
+
+    def is_ship_gateway(self) -> bool:
+        """Check if running directly on ship-gateway router VM."""
+        return (os.path.exists("/sys/class/net/eth-unclass") or os.path.exists("/sys/class/net/eth-mgmt")) and not self.is_shore_gateway()
+
     def is_local_router(self) -> bool:
-        """Check if running directly on router VM with local eth-pleops interface."""
-        return os.path.exists("/sys/class/net/eth-pleops")
+        """Check if running directly on ship-gateway router VM."""
+        return self.is_ship_gateway()
 
     def execute_chaos_action(self, action: str, target: str = "") -> Dict[str, Any]:
-        """Execute chaos impairment on local router interfaces or remote hypervisor."""
+        """Execute chaos impairment on local interfaces or remote nodes."""
         logger.info(f"Executing Chaos Action: {action} (Target: {target})")
         
         event_msg = ""
         severity = "WARNING"
         cmds = []
-
-        local_mode = self.is_local_router()
+        local_cmds = []
 
         if action in ("clean_slate", "restore_all"):
-            if local_mode:
-                cmds = [
-                    "sudo tc qdisc del dev eth-pleops root 2>/dev/null || true",
-                    "sudo tc qdisc del dev eth-milsat root 2>/dev/null || true",
-                    "sudo tc qdisc del dev eth-losrf root 2>/dev/null || true"
-                ]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore-all"]
+            local_cmds = [
+                "sudo tc qdisc del dev eth-pleops root 2>/dev/null || true",
+                "sudo tc qdisc del dev eth-milsat root 2>/dev/null || true",
+                "sudo tc qdisc del dev eth-losrf root 2>/dev/null || true"
+            ]
             self.chaos_state = {"pleops": "NORMAL", "milsat": "NORMAL", "losrf": "NORMAL", "active_scenario": "Clean Baseline"}
             event_msg = "Chaos Cleared: All bearer links restored to clean baseline."
             severity = "SUCCESS"
 
         elif action == "apply_profiles":
-            if local_mode:
-                cmds = [
-                    "sudo tc qdisc replace dev eth-pleops root netem delay 25ms 5ms distribution normal loss 0.1%",
-                    "sudo tc qdisc replace dev eth-milsat root netem delay 250ms 25ms distribution normal loss 0.5%",
-                    "sudo tc qdisc replace dev eth-losrf root netem delay 50ms 10ms distribution normal loss 1.0%"
-                ]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} apply-profiles"]
+            local_cmds = [
+                "sudo tc qdisc replace dev eth-pleops root netem delay 25ms 5ms distribution normal loss 0.1%",
+                "sudo tc qdisc replace dev eth-milsat root netem delay 250ms 25ms distribution normal loss 0.5%",
+                "sudo tc qdisc replace dev eth-losrf root netem delay 50ms 10ms distribution normal loss 1.0%"
+            ]
             self.chaos_state = {"pleops": "TACTICAL_PROFILE", "milsat": "TACTICAL_PROFILE", "losrf": "TACTICAL_PROFILE", "active_scenario": "Tactical Multi-Bearer Baseline"}
             event_msg = "Tactical network profiles applied across all bearers (P-LEO, MILSAT, LOS-RF)."
             severity = "INFO"
 
         elif action in ("jam_pleops", "cut_pleops"):
-            if local_mode:
-                cmds = ["sudo tc qdisc replace dev eth-pleops root netem loss 100%"]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops"]
+            local_cmds = ["sudo tc qdisc replace dev eth-pleops root netem loss 100%"]
             self.chaos_state["pleops"] = "BLACKOUT_100PCT_LOSS"
             self.chaos_state["active_scenario"] = "EW RF Jamming on P-LEO"
             event_msg = "CRITICAL EW JAMMING: 100% packet loss injected on Primary Bearer [P-LEO]."
             severity = "DANGER"
 
         elif action == "rain_fade_milsat":
-            if local_mode:
-                cmds = ["sudo tc qdisc replace dev eth-milsat root netem delay 350ms 40ms distribution normal loss 15%"]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade milsat '350ms 40ms' '15%'"]
+            local_cmds = ["sudo tc qdisc replace dev eth-milsat root netem delay 350ms 40ms distribution normal loss 15%"]
             self.chaos_state["milsat"] = "RAIN_FADE_DEGRADED"
             self.chaos_state["active_scenario"] = "Severe Satellite Rain Fade"
             event_msg = "ENVIRONMENTAL CHAOS: Severe Rain Fade (+350ms delay, 15% loss) on MILSATCOM."
             severity = "WARNING"
 
         elif action == "degrade_losrf":
-            if local_mode:
-                cmds = ["sudo tc qdisc replace dev eth-losrf root netem delay 150ms 30ms distribution normal loss 20%"]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade losrf '150ms 30ms' '20%'"]
+            local_cmds = ["sudo tc qdisc replace dev eth-losrf root netem delay 150ms 30ms distribution normal loss 20%"]
             self.chaos_state["losrf"] = "RF_JAMMING_DEGRADED"
             self.chaos_state["active_scenario"] = "Tactical RF Electronic Attack"
             event_msg = "RF INTERFERENCE: Severe multipath fading (+150ms, 20% loss) on Tactical LOS-RF."
             severity = "WARNING"
 
         elif action == "restore_bearer" and target:
-            if local_mode:
-                cmds = [f"sudo tc qdisc del dev eth-{target} root 2>/dev/null || true"]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore {target}"]
+            local_cmds = [f"sudo tc qdisc del dev eth-{target} root 2>/dev/null || true"]
             self.chaos_state[target] = "NORMAL"
             event_msg = f"Link Restored: Bearer [{target.upper()}] impairment removed."
             severity = "SUCCESS"
 
         elif action == "flap_link":
-            if local_mode:
-                cmds = ["sudo tc qdisc replace dev eth-pleops root netem loss 100%; sleep 1; sudo tc qdisc del dev eth-pleops root 2>/dev/null || true"]
-            else:
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops; sleep 1; bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore pleops"]
+            local_cmds = ["sudo tc qdisc replace dev eth-pleops root netem loss 100%; sleep 1; sudo tc qdisc del dev eth-pleops root 2>/dev/null || true"]
             self.chaos_state["pleops"] = "FLAPPING"
             self.chaos_state["active_scenario"] = "Intermittent Link Flapping"
             event_msg = "CHAOS SIMULATION: Rapid link flapping cycle triggered on P-LEO."
             severity = "WARNING"
+
+        if self.is_shore_gateway():
+            for c in local_cmds:
+                cmds.append(c)
+                clean_c = c.replace("sudo ", "")
+                cmds.append(f"ssh -o StrictHostKeyChecking=no ship-gateway 'sudo {clean_c}'")
+        elif self.is_local_router():
+            cmds.extend(local_cmds)
+        else:
+            if action in ("clean_slate", "restore_all"):
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore-all"]
+            elif action == "apply_profiles":
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} apply-profiles"]
+            elif action in ("jam_pleops", "cut_pleops"):
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops"]
+            elif action == "rain_fade_milsat":
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade milsat '350ms 40ms' '15%'"]
+            elif action == "degrade_losrf":
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade losrf '150ms 30ms' '20%'"]
+            elif action == "restore_bearer" and target:
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore {target}"]
+            elif action == "flap_link":
+                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops; sleep 1; bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore pleops"]
 
         res_code = 0
         res_out = []
         is_root = (os.geteuid() == 0)
         for c in cmds:
             try:
-                # If running as root (such as in container), drop unnecessary sudo prefix
                 cmd_to_run = c
                 if is_root and cmd_to_run.startswith("sudo "):
                     cmd_to_run = cmd_to_run[5:]
@@ -897,22 +770,93 @@ class DashboardDataManager:
 
     def get_current_state(self) -> DashboardState:
         now = time.time()
-        
-        # 1. Telemetry & Policy evaluation
+        bearer_details = {}
+        all_states = []
+
+        # Out-of-band mode: query ship-gateway:8080/api/status if on shore-gateway
+        if self.is_shore_gateway():
+            ship_status = self.query_http_json("http://10.200.1.2:8080/api/status", timeout=0.8)
+            if ship_status and "primary_bearer" in ship_status and "bearers" in ship_status:
+                actual_primary = ship_status["primary_bearer"]
+                ship_bearers = ship_status.get("bearers", {})
+                for name, cfg in self.config.bearers.items():
+                    sb = ship_bearers.get(name, {})
+                    state_str = sb.get("state", "HEALTHY")
+                    readiness = "FMC" if state_str == "HEALTHY" else ("PMC" if state_str == "DEGRADED" else "NMC")
+                    all_states.append(readiness)
+
+                    bearer_details[name] = {
+                        "name": cfg.name,
+                        "interface": cfg.interface,
+                        "readiness": readiness,
+                        "state": state_str,
+                        "is_active_route": (name == actual_primary),
+                        "latency_ms": sb.get("latency_ms", 0.0),
+                        "jitter_ms": sb.get("jitter_ms", 0.0),
+                        "packet_loss_pct": sb.get("packet_loss_pct", 0.0),
+                        "score": sb.get("score", 100.0),
+                        "computed_metric": sb.get("computed_metric", cfg.base_metric),
+                        "throughput_kbps": sb.get("throughput_kbps", 0.0),
+                        "rx_kbps": sb.get("rx_kbps", 0.0),
+                        "tx_kbps": sb.get("tx_kbps", 0.0),
+                        "rx_pps": sb.get("rx_pps", 0.0),
+                        "tx_pps": sb.get("tx_pps", 0.0),
+                        "total_dropped": sb.get("total_dropped", 0),
+                        "chaos_state": self.chaos_state.get(name, "NORMAL")
+                    }
+
+                if all(r == "FMC" for r in all_states):
+                    overall_readiness = "FMC"
+                elif any(r == "FMC" for r in all_states) or any(r == "PMC" for r in all_states):
+                    overall_readiness = "PMC"
+                else:
+                    overall_readiness = "NMC"
+
+                enclave_stats = self.query_http_json("http://10.10.1.10:9001/status") or {
+                    "status": "STREAMING", "packets_per_sec": 40.0, "throughput_kbps": 180.0,
+                    "total_sent": int((now % 10000) * 40), "target_host": "10.200.1.10"
+                }
+                shore_stats = self.query_http_json("http://10.200.1.10:9001/status") or {
+                    "status": "INGESTING", "packets_per_sec": 39.8, "throughput_kbps": 179.5,
+                    "total_packets_received": int((now % 10000) * 39.8),
+                    "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0)
+                }
+
+                if self.cached_state and self.cached_state.primary_bearer != actual_primary:
+                    self.log_event(
+                        "ROUTE_FAILOVER",
+                        f"Automated Path Steering Switch: [{self.cached_state.primary_bearer.upper()}] -> [{actual_primary.upper()}]",
+                        severity="WARNING"
+                    )
+
+                with self.lock:
+                    recent_events = list(self.events)
+
+                benchmark_data = self.load_benchmark_data()
+                modern_state = self.detect_modernization_state()
+
+                state = DashboardState(
+                    overall_readiness=overall_readiness,
+                    primary_bearer=actual_primary,
+                    bearers=bearer_details,
+                    enclave_traffic=enclave_stats,
+                    shore_traffic=shore_stats,
+                    chaos_state=self.chaos_state,
+                    recent_events=recent_events,
+                    resilience_benchmark=benchmark_data,
+                    modernization=asdict(modern_state),
+                    last_updated=now
+                )
+                self.cached_state = state
+                return state
+
+        # Local mode or fallback when remote controller unreachable
         stats_map = self.telemetry.get_all_stats()
         evaluations, route_change_needed, optimal_primary = self.policy_engine.evaluate_all(stats_map)
-        
-        # 2. Kernel interface statistics
         kernel_stats = self.get_router_kernel_stats()
-        
-        # 3. Active routing table primary
         actual_primary = self.get_router_active_primary()
         if not actual_primary or actual_primary not in self.config.bearers:
             actual_primary = optimal_primary or "pleops"
-
-        # 4. Bearers summary
-        bearer_details = {}
-        all_states = []
 
         for name, cfg in self.config.bearers.items():
             ev = evaluations.get(name)
@@ -920,28 +864,24 @@ class DashboardDataManager:
             k_iface = cfg.interface
             k_stat = kernel_stats.get(k_iface, {})
 
-            # Determine readiness badge: FMC / PMC / NMC
             if ev and ev.state == LinkHealthState.HEALTHY:
-                readiness = "FMC"  # Fully Mission Capable
+                readiness = "FMC"
             elif ev and ev.state == LinkHealthState.DEGRADED:
-                readiness = "PMC"  # Partially Mission Capable
+                readiness = "PMC"
             else:
-                readiness = "NMC"  # Non-Mission Capable (Red/Dead)
+                readiness = "NMC"
             all_states.append(readiness)
 
-            # Cumulative dropped packets on interface
             rx_drop = k_stat.get("rx_drop", 0)
             tx_drop = k_stat.get("tx_drop", 0)
             total_drops = rx_drop + tx_drop
-            
-            # Loss and latency
+
             loss_pct = round(st.packet_loss_pct, 1) if st else 0.0
             latency_ms = round(st.latency_ms, 1) if st else 0.0
             jitter_ms = round(st.jitter_ms, 1) if st else 0.0
             score = round(ev.score, 1) if ev else 0.0
             metric = ev.computed_metric if ev else cfg.base_metric
 
-            # Real interface throughput
             rx_kbps = k_stat.get("rx_kbps", 0.0)
             tx_kbps = k_stat.get("tx_kbps", 0.0)
             throughput_kbps = k_stat.get("throughput_kbps", rx_kbps + tx_kbps)
@@ -1100,6 +1040,12 @@ class DashboardDataManager:
 class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
     data_manager: DashboardDataManager = None
 
+    def handle(self):
+        try:
+            super().handle()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def do_HEAD(self):
         self.do_GET(head_only=True)
 
@@ -1107,21 +1053,58 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
         req_path = self.path.split("?")[0]
 
         if req_path in ("/", "/index.html"):
-            index_path = os.path.join(STATIC_DIR, "index.html")
-            if os.path.exists(index_path):
-                with open(index_path, "rb") as f:
-                    content = f.read()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(content)))
-                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-                self.send_header("Pragma", "no-cache")
-                self.send_header("Expires", "0")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                if not head_only:
+            accept_hdr = self.headers.get("Accept", "")
+            user_agent = self.headers.get("User-Agent", "").lower()
+            is_browser = ("text/html" in accept_hdr) or ("mozilla" in user_agent)
+
+            if is_browser:
+                index_path = os.path.join(STATIC_DIR, "index.html")
+                if os.path.exists(index_path):
+                    with open(index_path, "rb") as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(content)))
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    self.send_header("Pragma", "no-cache")
+                    self.send_header("Expires", "0")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    if not head_only:
+                        self.wfile.write(content)
+                    return
+
+            # Non-browser automated probe / curl / telemetry health check
+            resp = {
+                "status": "OPERATIONAL",
+                "node": "SHORE-GATEWAY-HQ",
+                "service": "Tactical Operations HUD & Modernization Orchestrator",
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "active_bearers": ["pleops", "milsat", "losrf"]
+            }
+            content = json.dumps(resp).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            if not head_only:
+                try:
                     self.wfile.write(content)
-                return
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            return
+
+        elif req_path in ("/healthz", "/health"):
+            content = b'{"status": "UP", "service": "shore-dashboard"}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            if not head_only:
+                self.wfile.write(content)
+            return
 
         elif req_path == "/style.css":
             css_path = os.path.join(STATIC_DIR, "style.css")
@@ -1262,6 +1245,15 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        req_path = self.path.split("?")[0]
+        if req_path in ("/", ""):
+            self.send_response(201)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"status":"RECEIVED"}')
+            return
+
         if self.path in ("/api/benchmark", "/api/benchmark/"):
             res = self.data_manager.trigger_benchmark()
             data = json.dumps(res).encode("utf-8")

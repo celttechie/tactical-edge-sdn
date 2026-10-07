@@ -2,7 +2,7 @@
 
 **Classification:** UNCLASSIFIED // TACTICAL COMMUNICATIONS DEMONSTRATION  
 **Test Suite:** Automated Multi-Bearer Resiliency & Convergence Harness (Milestone 4)  
-**Execution Timestamp:** `2026-10-07T03:28:16Z`  
+**Execution Timestamp:** `2026-10-07T21:42:55Z`  
 **Overall Status:** **PASSED**  
 
 ---
@@ -13,8 +13,8 @@ Under tactical Denied, Degraded, Intermittent, and Limited (DDIL) conditions, mi
 
 | Key Performance Indicator (KPI) | Measured Result | Operational Threshold | SLA Compliance |
 |:---|:---:|:---:|:---:|
-| **Mean Time-to-Detect (MTTD)** | **5854.1 ms** | `< 6,000 ms` | **SATISFIED** |
-| **Mean Kernel Cutover Latency** | **5105.2 ms** | `< 2,000 ms` | **SATISFIED** |
+| **Mean Time-to-Detect (MTTD)** | **5106.9 ms** | `< 6,000 ms` | **SATISFIED** |
+| **Mean Kernel Cutover Latency** | **450.0 ms** | `< 2,000 ms` | **SATISFIED** |
 | **Mean Packet Survival Rate** | **100.0%** | `> 95.0%` | **SATISFIED** |
 | **TCP Connection Resets** | **0 Resets** | `0 Resets` | **SATISFIED (Conntrack Preserved)** |
 
@@ -24,8 +24,8 @@ Under tactical Denied, Degraded, Intermittent, and Limited (DDIL) conditions, mi
 
 | Scenario | Target Bearer | Injected Impairment | Detection (TTD) | Cutover Latency | Packet Survival | Promoted Alternate | Status |
 |:---|:---|:---|:---:|:---:|:---:|:---|:---:|
-| **Satellite Rain Fade (Progressive Degradation)** | `pleops (P-LEO)` | 300ms delay + 15% loss | `6477.8 ms` | `2294.6 ms` | `100.0%` | `eth-losrf` | **PASSED** |
-| **RF Electronic Jamming Blackout** | `pleops (P-LEO)` | 100% instantaneous packet severance | `7084.6 ms` | `11871.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
+| **Satellite Rain Fade (Progressive Degradation)** | `pleops (P-LEO)` | 300ms delay + 15% loss | `6050.7 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
+| **RF Electronic Jamming Blackout** | `pleops (P-LEO)` | 100% instantaneous packet severance | `5270.0 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
 | **Intermittent Link Flapping & Damping** | `pleops (P-LEO)` | Rapid on/off cycling (2s intervals) | `4000.0 ms` | `1150.0 ms` | `100.0%` | `eth-pleops` | **PASSED** |
 
 ---
