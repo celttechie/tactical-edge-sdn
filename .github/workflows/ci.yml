@@ -128,7 +128,7 @@ jobs:
           if-no-files-found: error
 
       - name: Run Trivy Vulnerability Scan (Console Summary)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.29.0
         with:
           image-ref: tactical-sdn-stack:ci
           format: table
@@ -138,7 +138,7 @@ jobs:
           trivyignores: .trivyignore
 
       - name: Run Trivy Vulnerability Scan (SARIF Report)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.29.0
         if: always()
         with:
           image-ref: tactical-sdn-stack:ci
