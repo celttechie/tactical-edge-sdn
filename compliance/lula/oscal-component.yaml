@@ -34,6 +34,8 @@ component-definition:
                   container.securityContext.capabilities.drop[_] == "ALL"
                   container.securityContext.capabilities.add[_] == "NET_ADMIN"
                   container.securityContext.capabilities.add[_] == "NET_RAW"
+                  not ds.spec.template.spec.hostPID
+                  container.securityContext.seccompProfile.type == "RuntimeDefault"
                 }
             type: opa
         title: ac-3-validation
