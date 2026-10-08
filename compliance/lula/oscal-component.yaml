@@ -28,7 +28,14 @@ component-definition:
                 validate {
                   ds := input.sdn_daemonset[0]
                   container := ds.spec.template.spec.containers[0]
+                  container.securityContext.privileged == false
+                  container.securityContext.allowPrivilegeEscalation == false
+                  container.securityContext.readOnlyRootFilesystem == true
+                  container.securityContext.capabilities.drop[_] == "ALL"
                   container.securityContext.capabilities.add[_] == "NET_ADMIN"
+                  container.securityContext.capabilities.add[_] == "NET_RAW"
+                  not ds.spec.template.spec.hostPID
+                  container.securityContext.seccompProfile.type == "RuntimeDefault"
                 }
             type: opa
         title: ac-3-validation

@@ -7,13 +7,16 @@ and computes dynamic routing metrics.
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
+
 from .config import BearerConfig, ControllerConfig
 from .sla_prober import LinkStats
+
 
 class LinkHealthState(str, Enum):
     HEALTHY = "HEALTHY"
     DEGRADED = "DEGRADED"
     DOWN = "DOWN"
+
 
 @dataclass
 class BearerEvaluation:
@@ -24,10 +27,12 @@ class BearerEvaluation:
     violations: List[str]
     stats: LinkStats
 
+
 class SDWANPolicyEngine:
     """
     Evaluates real-time SLA metrics for each bearer and computes dynamic routing weights.
     """
+
     def __init__(self, config: ControllerConfig):
         self.config = config
         self.current_primary: Optional[str] = None
@@ -50,7 +55,7 @@ class SDWANPolicyEngine:
                 computed_metric=computed_metric,
                 score=score,
                 violations=violations,
-                stats=stats
+                stats=stats,
             )
 
         # Check SLA threshold violations
@@ -81,7 +86,7 @@ class SDWANPolicyEngine:
             computed_metric=computed_metric,
             score=score,
             violations=violations,
-            stats=stats
+            stats=stats,
         )
 
     def evaluate_all(self, stats_map: Dict[str, LinkStats]) -> Tuple[Dict[str, BearerEvaluation], bool, Optional[str]]:
@@ -97,11 +102,15 @@ class SDWANPolicyEngine:
         # Select primary bearer: highest score among healthy, or lowest metric
         sorted_bearers = sorted(
             evaluations.values(),
-            key=lambda e: (e.state != LinkHealthState.HEALTHY, e.computed_metric, -e.score)
+            key=lambda e: (
+                e.state != LinkHealthState.HEALTHY,
+                e.computed_metric,
+                -e.score,
+            ),
         )
 
         new_primary = sorted_bearers[0].bearer if sorted_bearers else None
-        
+
         # Check if route change is required
         route_change_needed = False
         if new_primary != self.current_primary:

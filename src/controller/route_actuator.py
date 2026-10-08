@@ -4,18 +4,21 @@ Applies dynamic route mutations to the Linux Kernel routing table and FRR contro
 based on Policy Engine evaluations.
 """
 
-import subprocess
 import logging
+import subprocess
 from typing import Dict, List, Optional
+
 from .config import ControllerConfig
 from .policy_engine import BearerEvaluation, LinkHealthState
 
 logger = logging.getLogger("sdwan-actuator")
 
+
 class RouteActuator:
     """
     Manages Linux kernel and FRR routing state dynamically.
     """
+
     def __init__(self, config: ControllerConfig):
         self.config = config
 
@@ -62,7 +65,9 @@ class RouteActuator:
                 logger.error(f"Failed to update default route for {name} ({cmd_default}): {res2.stderr.strip()}")
                 success = False
 
-            logger.info(f" -> Bearer {name:7s} ({ifname:10s} -> {gw}) Metric set to {metric:4d} [State: {ev.state.value}]")
+            logger.info(
+                f" -> Bearer {name:7s} ({ifname:10s} -> {gw}) Metric set to {metric:4d} [State: {ev.state.value}]"
+            )
 
         # Flush conntrack table if link is completely DOWN to accelerate TCP re-routing
         for name, ev in evaluations.items():

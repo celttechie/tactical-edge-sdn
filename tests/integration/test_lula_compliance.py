@@ -11,14 +11,15 @@ Validates:
    - Control CM-6: Configuration Settings & Policy Parameters (Multi-bearer SLA config definitions).
 """
 
+import glob
 import os
 import subprocess
-import glob
 import unittest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 LULA_DIR = os.path.join(PROJECT_ROOT, "compliance", "lula")
 VALIDATIONS_DIR = os.path.join(LULA_DIR, "validations")
+
 
 class TestLulaOSCALCompliance(unittest.TestCase):
     def test_01_oscal_component_definition_exists(self):
@@ -44,7 +45,7 @@ class TestLulaOSCALCompliance(unittest.TestCase):
                 cwd=PROJECT_ROOT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             self.assertEqual(res.returncode, 0, f"Lint failed for {val_file}: {res.stderr}")
 
@@ -58,10 +59,14 @@ class TestLulaOSCALCompliance(unittest.TestCase):
                 cwd=PROJECT_ROOT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             print(f" -> Control {ctrl_name} Validation: {'PASSED' if res.returncode == 0 else 'FAILED'}")
-            self.assertEqual(res.returncode, 0, f"Validation failed for {val_file}:\nStdout: {res.stdout}\nStderr: {res.stderr}")
+            self.assertEqual(
+                res.returncode,
+                0,
+                f"Validation failed for {val_file}:\nStdout: {res.stdout}\nStderr: {res.stderr}",
+            )
 
     def test_04_lula_full_component_validation_passes(self):
         """Execute full component validation and verify all 4 NIST SP 800-53 controls are satisfied."""
@@ -71,13 +76,25 @@ class TestLulaOSCALCompliance(unittest.TestCase):
             cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
         combined_output = res.stdout + "\n" + res.stderr
         print(f" -> Full OSCAL Component Validation Result:\n{combined_output}")
-        self.assertEqual(res.returncode, 0, f"Full component validate failed:\nStdout: {res.stdout}\nStderr: {res.stderr}")
-        self.assertNotIn("not-satisfied", combined_output, "Found not-satisfied controls in assessment findings")
-        self.assertIn("satisfied", combined_output, "Expected satisfied controls in assessment findings")
+        self.assertEqual(
+            res.returncode,
+            0,
+            f"Full component validate failed:\nStdout: {res.stdout}\nStderr: {res.stderr}",
+        )
+        self.assertNotIn(
+            "not-satisfied",
+            combined_output,
+            "Found not-satisfied controls in assessment findings",
+        )
+        self.assertIn(
+            "satisfied",
+            combined_output,
+            "Expected satisfied controls in assessment findings",
+        )
 
         # Verify assessment results file was produced
         results_file = os.path.join(LULA_DIR, "assessment-results.yaml")
@@ -86,6 +103,7 @@ class TestLulaOSCALCompliance(unittest.TestCase):
             results_content = f.read()
             self.assertIn("assessment-results", results_content)
             self.assertIn("satisfied", results_content)
+
 
 if __name__ == "__main__":
     print("=" * 75)

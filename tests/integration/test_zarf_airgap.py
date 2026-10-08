@@ -9,15 +9,16 @@ Validates:
 4. Containerized SDN stack functionality and capability checks.
 """
 
+import json
 import os
 import subprocess
 import tarfile
 import tempfile
-import json
 import unittest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 PACKAGE_PATH = os.path.join(PROJECT_ROOT, "build", "zarf-package-tactical-sdn-stack-amd64-0.3.0.tar.zst")
+
 
 class TestZarfAirGapPackage(unittest.TestCase):
     @classmethod
@@ -26,11 +27,19 @@ class TestZarfAirGapPackage(unittest.TestCase):
         if not os.path.exists(PACKAGE_PATH):
             print(f"\n[Setup] Building Zarf package from packages/zarf...")
             res = subprocess.run(
-                ["zarf", "package", "create", "packages/zarf", "--confirm", "-o", "build/"],
+                [
+                    "zarf",
+                    "package",
+                    "create",
+                    "packages/zarf",
+                    "--confirm",
+                    "-o",
+                    "build/",
+                ],
                 cwd=PROJECT_ROOT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             if res.returncode != 0:
                 raise RuntimeError(f"Zarf package create failed: {res.stderr}\n{res.stdout}")
@@ -41,7 +50,11 @@ class TestZarfAirGapPackage(unittest.TestCase):
         size_bytes = os.path.getsize(PACKAGE_PATH)
         size_mb = size_bytes / (1024 * 1024)
         print(f" -> Zarf Package Archive Size: {size_mb:.2f} MB")
-        self.assertGreater(size_mb, 30.0, "Package size too small, image layers may not have been bundled!")
+        self.assertGreater(
+            size_mb,
+            30.0,
+            "Package size too small, image layers may not have been bundled!",
+        )
 
     def test_02_zarf_lint_passes(self):
         """Verify declarative package definition conforms strictly to Zarf schema without errors."""
@@ -50,7 +63,7 @@ class TestZarfAirGapPackage(unittest.TestCase):
             cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
         self.assertEqual(res.returncode, 0, f"Zarf lint failed: {res.stderr}\n{res.stdout}")
         self.assertIn("tactical-sdn-stack", res.stdout)
@@ -63,10 +76,14 @@ class TestZarfAirGapPackage(unittest.TestCase):
                 ["zarf", "tools", "archiver", "decompress", PACKAGE_PATH, tmpdir],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
-            self.assertEqual(decompress_res.returncode, 0, f"Decompression failed: {decompress_res.stderr}")
-            
+            self.assertEqual(
+                decompress_res.returncode,
+                0,
+                f"Decompression failed: {decompress_res.stderr}",
+            )
+
             extracted_files = os.listdir(tmpdir)
             print(f" -> Extracted Package Artifacts: {extracted_files}")
             self.assertIn("zarf.yaml", extracted_files)
@@ -87,24 +104,41 @@ class TestZarfAirGapPackage(unittest.TestCase):
         """Verify the built package successfully deploys to Kubernetes and pods enter Running state."""
         # Deploy package using zarf
         deploy_cmd = ["zarf", "package", "deploy", PACKAGE_PATH, "--confirm"]
-        res = subprocess.run(deploy_cmd, cwd=PROJECT_ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        self.assertEqual(res.returncode, 0, f"Zarf package deploy failed: {res.stderr}\n{res.stdout}")
-        
-        # Verify DaemonSet / Pod in tactical-sdn namespace
-        k_res = subprocess.run(
-            ["kubectl", "get", "pods", "-n", "tactical-sdn", "-l", "app.kubernetes.io/name=tactical-sdn", "-o", "json"],
+        res = subprocess.run(
+            deploy_cmd,
+            cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0, f"Zarf package deploy failed: {res.stderr}\n{res.stdout}")
+
+        # Verify DaemonSet / Pod in tactical-sdn namespace
+        k_res = subprocess.run(
+            [
+                "kubectl",
+                "get",
+                "pods",
+                "-n",
+                "tactical-sdn",
+                "-l",
+                "app.kubernetes.io/name=tactical-sdn",
+                "-o",
+                "json",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         self.assertEqual(k_res.returncode, 0, f"Failed to get pods: {k_res.stderr}")
         pod_data = json.loads(k_res.stdout)
         items = pod_data.get("items", [])
         self.assertGreater(len(items), 0, "No SDN pods found in tactical-sdn namespace!")
-        
+
         pod_phase = items[0]["status"].get("phase")
         print(f" -> Live Deployed Pod Name: {items[0]['metadata']['name']} | Status: {pod_phase}")
         self.assertEqual(pod_phase, "Running", f"Expected Pod to be Running, got {pod_phase}")
+
 
 if __name__ == "__main__":
     print("=" * 75)

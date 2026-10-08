@@ -5,43 +5,46 @@ Serves the real-time tactical dashboard, WebSocket/SSE telemetry feed,
 and interactive DDIL chaos injection endpoints.
 """
 
-import os
-import sys
-import time
 import json
 import logging
-import threading
-import subprocess
+import os
 import shutil
-import urllib.request
+import subprocess
+import sys
+import threading
+import time
 import urllib.error
 import urllib.parse
-from http.server import ThreadingHTTPServer, HTTPServer, SimpleHTTPRequestHandler
-from typing import Dict, Any, List, Optional, Union
-from dataclasses import dataclass, asdict
+import urllib.request
 from collections import deque
+from dataclasses import asdict, dataclass
+from http.server import HTTPServer, SimpleHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any, Dict, List, Optional, Union
 
 # Import controller components
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.controller.config import ControllerConfig, DEFAULT_CONFIG
-from src.controller.sla_prober import MultiBearerTelemetryManager
-from src.controller.policy_engine import SDWANPolicyEngine, LinkHealthState
+from src.controller.config import DEFAULT_CONFIG, ControllerConfig
 from src.controller.interface_stats import InterfaceStatsCollector
+from src.controller.policy_engine import LinkHealthState, SDWANPolicyEngine
+from src.controller.sla_prober import MultiBearerTelemetryManager
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [dashboard-server] %(message)s"
+    format="%(asctime)s [%(levelname)s] [dashboard-server] %(message)s",
 )
 logger = logging.getLogger("dashboard-server")
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 DEFAULT_PORT = 8080
 
+
 @dataclass
 class ModernizationState:
-    stage: str = "STAGE_1_LEGACY_DAY0"  # STAGE_1_LEGACY_DAY0, STAGE_2_K3S_INIT, STAGE_3_ZARF_STAGING, STAGE_4_CNF_ACTIVE
+    stage: str = (
+        "STAGE_1_LEGACY_DAY0"  # STAGE_1_LEGACY_DAY0, STAGE_2_K3S_INIT, STAGE_3_ZARF_STAGING, STAGE_4_CNF_ACTIVE
+    )
     stage_number: int = 1
     stage_name: str = "Day 0 Legacy Baseline"
     gateway_type: str = "LEGACY_VNF"  # LEGACY_VNF or CONTAINERIZED_CNF
@@ -66,8 +69,9 @@ class ModernizationState:
                 "1": "ACTIVE",
                 "2": "PENDING",
                 "3": "PENDING",
-                "4": "PENDING"
+                "4": "PENDING",
             }
+
 
 @dataclass
 class DashboardState:
@@ -82,6 +86,7 @@ class DashboardState:
     modernization: Optional[Dict[str, Any]] = None
     last_updated: float = 0.0
 
+
 class DashboardDataManager:
     def __init__(self, is_remote_hypervisor: bool = True):
         self.is_remote = is_remote_hypervisor
@@ -92,30 +97,28 @@ class DashboardDataManager:
             "pleops": "NORMAL",
             "milsat": "NORMAL",
             "losrf": "NORMAL",
-            "active_scenario": "Clean Baseline"
+            "active_scenario": "Clean Baseline",
         }
         self.lock = threading.Lock()
         self.modernization_state = ModernizationState()
-        
+
         # Thread-safe in-memory execution and subsystem log ring buffer
         self.log_buffer: deque = deque(maxlen=2000)
         self.log_counter: int = 0
         self.log_lock = threading.Lock()
         self._setup_logging_integration()
-        
+
         # Local prober & engine if running standalone
         bearer_dict = {
             name: {
                 "interface": cfg.interface,
                 "target_ip": cfg.target_ip,
-                "gateway_ip": cfg.gateway_ip
+                "gateway_ip": cfg.gateway_ip,
             }
             for name, cfg in self.config.bearers.items()
         }
         self.telemetry = MultiBearerTelemetryManager(
-            bearers=bearer_dict,
-            window_size=self.config.probe_window_size,
-            interval=0.5
+            bearers=bearer_dict, window_size=self.config.probe_window_size, interval=0.5
         )
         self.policy_engine = SDWANPolicyEngine(self.config)
         self.cached_state: Optional[DashboardState] = None
@@ -125,6 +128,7 @@ class DashboardDataManager:
     def _setup_logging_integration(self):
         """Bridge standard Python logging into the in-memory dashboard log buffer."""
         mgr = self
+
         class BufferHandler(logging.Handler):
             def emit(self, record):
                 try:
@@ -132,9 +136,20 @@ class DashboardDataManager:
                     src = "SYSTEM"
                     rec_name = (record.name or "").lower()
                     msg_lower = msg.lower()
-                    if "modern" in rec_name or "modern" in msg_lower or "cutover" in msg_lower or "k3s" in msg_lower or "zarf" in msg_lower:
+                    if (
+                        "modern" in rec_name
+                        or "modern" in msg_lower
+                        or "cutover" in msg_lower
+                        or "k3s" in msg_lower
+                        or "zarf" in msg_lower
+                    ):
                         src = "MODERNIZER"
-                    elif "prober" in rec_name or "probe" in msg_lower or "telemetry" in rec_name or "latency" in msg_lower:
+                    elif (
+                        "prober" in rec_name
+                        or "probe" in msg_lower
+                        or "telemetry" in rec_name
+                        or "latency" in msg_lower
+                    ):
                         src = "PROBER"
                     elif "chaos" in rec_name or "chaos" in msg_lower:
                         src = "CHAOS"
@@ -158,12 +173,18 @@ class DashboardDataManager:
                 "time_str": time.strftime("%H:%M:%S", time.gmtime()) + "Z",
                 "source": source.upper(),
                 "level": level.upper(),
-                "message": str(message)
+                "message": str(message),
             }
             self.log_buffer.append(entry)
             return entry
 
-    def get_logs(self, tail: int = 200, since_id: int = 0, source_filter: Optional[str] = None, level_filter: Optional[str] = None) -> Dict[str, Any]:
+    def get_logs(
+        self,
+        tail: int = 200,
+        since_id: int = 0,
+        source_filter: Optional[str] = None,
+        level_filter: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Query recent log entries with filtering and incremental offset support."""
         with self.log_lock:
             items = list(self.log_buffer)
@@ -186,17 +207,27 @@ class DashboardDataManager:
             "logs": items,
             "total_count": total_count,
             "latest_id": latest_id,
-            "server_time": time.time()
+            "server_time": time.time(),
         }
 
     def clear_logs(self) -> Dict[str, Any]:
         """Clear the backend log buffer."""
         with self.log_lock:
             self.log_buffer.clear()
-        self.add_log(source="SYSTEM", message="Execution log buffer cleared by operator.", level="INFO")
+        self.add_log(
+            source="SYSTEM",
+            message="Execution log buffer cleared by operator.",
+            level="INFO",
+        )
         return {"status": "CLEARED"}
 
-    def run_logged_command(self, cmd: Union[str, List[str]], source: str = "MODERNIZER", timeout: float = 300.0, shell: bool = True) -> int:
+    def run_logged_command(
+        self,
+        cmd: Union[str, List[str]],
+        source: str = "MODERNIZER",
+        timeout: float = 300.0,
+        shell: bool = True,
+    ) -> int:
         """Run a shell command, stream its stdout/stderr line-by-line into the log buffer, and return exit code."""
         cmd_str = cmd if isinstance(cmd, str) else " ".join(cmd)
         self.add_log(source="CMD", message=f"$ {cmd_str}", level="CMD")
@@ -207,19 +238,27 @@ class DashboardDataManager:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1
+                bufsize=1,
             )
             if proc.stdout:
-                for line in iter(proc.stdout.readline, ''):
+                for line in iter(proc.stdout.readline, ""):
                     clean_line = line.strip()
                     if clean_line:
                         self.add_log(source=source, message=clean_line, level="STDOUT")
                 proc.stdout.close()
             rc = proc.wait(timeout=timeout)
             if rc == 0:
-                self.add_log(source="CMD", message=f"✓ Command completed successfully (exit code 0)", level="SUCCESS")
+                self.add_log(
+                    source="CMD",
+                    message=f"✓ Command completed successfully (exit code 0)",
+                    level="SUCCESS",
+                )
             else:
-                self.add_log(source="CMD", message=f"✗ Command finished with exit code {rc}", level="ERROR")
+                self.add_log(
+                    source="CMD",
+                    message=f"✗ Command finished with exit code {rc}",
+                    level="ERROR",
+                )
             return rc
         except Exception as e:
             self.add_log(source="CMD", message=f"✗ Command execution failed: {e}", level="ERROR")
@@ -230,7 +269,7 @@ class DashboardDataManager:
         benchmark_paths = [
             os.path.join(PROJECT_ROOT, "docs", "benchmarks", "benchmark_results.json"),
             "/etc/tactical-sdn/benchmark_results.json",
-            "/tmp/benchmark_results.json"
+            "/tmp/benchmark_results.json",
         ]
         for p in benchmark_paths:
             if os.path.exists(p):
@@ -242,7 +281,7 @@ class DashboardDataManager:
                         return data
                 except Exception:
                     pass
-        
+
         # Validated baseline metrics
         default_data = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -261,7 +300,7 @@ class DashboardDataManager:
                     "packet_survival_pct": 99.1,
                     "promoted_route": "eth-milsat",
                     "alternate_c2_latency_ms": 252.0,
-                    "status": "PASSED"
+                    "status": "PASSED",
                 },
                 {
                     "scenario_name": "RF Electronic Jamming Blackout",
@@ -272,7 +311,7 @@ class DashboardDataManager:
                     "packet_survival_pct": 98.7,
                     "promoted_route": "eth-milsat",
                     "alternate_c2_latency_ms": 254.0,
-                    "status": "PASSED"
+                    "status": "PASSED",
                 },
                 {
                     "scenario_name": "Intermittent Link Flapping & Damping",
@@ -283,9 +322,9 @@ class DashboardDataManager:
                     "packet_survival_pct": 99.8,
                     "promoted_route": "eth-pleops",
                     "alternate_c2_latency_ms": 24.5,
-                    "status": "PASSED"
-                }
-            ]
+                    "status": "PASSED",
+                },
+            ],
         }
         self.benchmark_cache = default_data
         return default_data
@@ -294,25 +333,45 @@ class DashboardDataManager:
         """Trigger asynchronous benchmark runner in background thread."""
         if self.benchmark_running:
             return {"status": "IN_PROGRESS", "message": "Benchmark already running."}
-        
+
         self.benchmark_running = True
-        self.log_event("BENCHMARK_TRIGGERED", "Tactical DDIL Resiliency Benchmark suite initiated...", severity="INFO")
+        self.log_event(
+            "BENCHMARK_TRIGGERED",
+            "Tactical DDIL Resiliency Benchmark suite initiated...",
+            severity="INFO",
+        )
 
         def _run():
             try:
                 script_path = os.path.join(PROJECT_ROOT, "tests", "chaos", "run_resiliency_benchmark.py")
                 if os.path.exists(script_path):
-                    rc = self.run_logged_command(["python3", script_path], source="BENCHMARK", timeout=180, shell=False)
+                    rc = self.run_logged_command(
+                        ["python3", script_path],
+                        source="BENCHMARK",
+                        timeout=180,
+                        shell=False,
+                    )
                     if rc == 0:
-                        self.log_event("BENCHMARK_COMPLETE", "Tactical DDIL Resiliency Benchmark completed successfully.", severity="SUCCESS")
+                        self.log_event(
+                            "BENCHMARK_COMPLETE",
+                            "Tactical DDIL Resiliency Benchmark completed successfully.",
+                            severity="SUCCESS",
+                        )
                     else:
-                        self.log_event("BENCHMARK_COMPLETE", f"Benchmark finished with code {rc}.", severity="WARNING")
+                        self.log_event(
+                            "BENCHMARK_COMPLETE",
+                            f"Benchmark finished with code {rc}.",
+                            severity="WARNING",
+                        )
                 self.load_benchmark_data()
             finally:
                 self.benchmark_running = False
 
         threading.Thread(target=_run, daemon=True).start()
-        return {"status": "STARTED", "message": "Resiliency benchmark started in background."}
+        return {
+            "status": "STARTED",
+            "message": "Resiliency benchmark started in background.",
+        }
 
     def detect_modernization_state(self) -> ModernizationState:
         """Inspect actual router node or state to reflect accurate Day 0 vs CNF status."""
@@ -322,31 +381,68 @@ class DashboardDataManager:
         try:
             # Initial probe on startup
             if self.is_local_router():
-                k3s_active = (subprocess.run("systemctl is-active k3s.service", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip() == "active")
-                legacy_active = (subprocess.run("systemctl is-active sdwan-controller.service", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip() == "active")
+                k3s_active = (
+                    subprocess.run(
+                        "systemctl is-active k3s.service",
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    ).stdout.strip()
+                    == "active"
+                )
+                legacy_active = (
+                    subprocess.run(
+                        "systemctl is-active sdwan-controller.service",
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    ).stdout.strip()
+                    == "active"
+                )
                 cnf_active = False
                 zarf_active = False
                 if k3s_active:
-                    cnf_check = subprocess.run("k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null", shell=True, stdout=subprocess.PIPE, text=True)
-                    cnf_active = ("Running" in cnf_check.stdout)
-                    zarf_check = subprocess.run("k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null", shell=True, stdout=subprocess.PIPE, text=True)
-                    zarf_active = ("Running" in zarf_check.stdout)
+                    cnf_check = subprocess.run(
+                        "k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null",
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    )
+                    cnf_active = "Running" in cnf_check.stdout
+                    zarf_check = subprocess.run(
+                        "k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null",
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    )
+                    zarf_active = "Running" in zarf_check.stdout
             else:
                 ssh_cmd = [
-                    "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
-                    "-o", "ConnectTimeout=2",
+                    "ssh",
+                    "-o",
+                    "StrictHostKeyChecking=no",
+                    "-o",
+                    "UserKnownHostsFile=/dev/null",
+                    "-o",
+                    "ConnectTimeout=2",
                     "ship-gateway",
                     "echo K3S:$(systemctl is-active k3s.service 2>/dev/null || echo inactive); "
                     "echo LEGACY:$(systemctl is-active sdwan-controller.service 2>/dev/null || echo inactive); "
                     "echo CNF:$(k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null | grep -c Running || echo 0); "
-                    "echo ZARF:$(k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null | grep -c Running || echo 0)"
+                    "echo ZARF:$(k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null | grep -c Running || echo 0)",
                 ]
-                res = subprocess.run(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3.0)
+                res = subprocess.run(
+                    ssh_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=3.0,
+                )
                 out = res.stdout
-                k3s_active = ("K3S:active" in out)
-                legacy_active = ("LEGACY:active" in out)
-                cnf_active = ("CNF:1" in out or "CNF:2" in out)
-                zarf_active = ("ZARF:1" in out)
+                k3s_active = "K3S:active" in out
+                legacy_active = "LEGACY:active" in out
+                cnf_active = "CNF:1" in out or "CNF:2" in out
+                zarf_active = "ZARF:1" in out
 
             if cnf_active:
                 self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
@@ -361,7 +457,10 @@ class DashboardDataManager:
                 self.modernization_state.completed_stage = 4
                 self.modernization_state.completion_message = "Cloud-Native CNF Active (K3s Dynamic SLA Steering)"
                 self.modernization_state.stage_statuses = {
-                    "1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"
+                    "1": "RETIRED",
+                    "2": "SETUP_COMPLETED",
+                    "3": "SETUP_COMPLETED",
+                    "4": "SETUP_COMPLETED",
                 }
             elif zarf_active:
                 self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
@@ -376,7 +475,10 @@ class DashboardDataManager:
                 self.modernization_state.completed_stage = 3
                 self.modernization_state.completion_message = "Zarf Registry Staged (Ready for CNF Cutover)"
                 self.modernization_state.stage_statuses = {
-                    "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"
+                    "1": "ACTIVE",
+                    "2": "SETUP_COMPLETED",
+                    "3": "SETUP_COMPLETED",
+                    "4": "READY",
                 }
             elif k3s_active:
                 self.modernization_state.stage = "STAGE_2_K3S_INIT"
@@ -391,7 +493,10 @@ class DashboardDataManager:
                 self.modernization_state.completed_stage = 2
                 self.modernization_state.completion_message = "K3s Cluster Initialized (Legacy Routing Intact)"
                 self.modernization_state.stage_statuses = {
-                    "1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"
+                    "1": "ACTIVE",
+                    "2": "SETUP_COMPLETED",
+                    "3": "READY",
+                    "4": "PENDING",
                 }
             else:
                 self.modernization_state.stage = "STAGE_1_LEGACY_DAY0"
@@ -406,7 +511,10 @@ class DashboardDataManager:
                 self.modernization_state.completed_stage = 1
                 self.modernization_state.completion_message = "Day 0 Legacy Router Active (Static Metric Routing)"
                 self.modernization_state.stage_statuses = {
-                    "1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"
+                    "1": "ACTIVE",
+                    "2": "PENDING",
+                    "3": "PENDING",
+                    "4": "PENDING",
                 }
         except Exception as e:
             logger.debug(f"Modernization state detection error: {e}")
@@ -416,7 +524,10 @@ class DashboardDataManager:
     def trigger_modernization_step(self, action: str) -> Dict[str, Any]:
         """Trigger interactive modernization action from dashboard buttons with visual progress."""
         if self.modernization_state.is_in_transition:
-            return {"status": "BUSY", "message": "Modernization action already in progress."}
+            return {
+                "status": "BUSY",
+                "message": "Modernization action already in progress.",
+            }
 
         logger.info(f"Triggering Modernization Action: {action}")
         self.modernization_state.is_in_transition = True
@@ -424,12 +535,36 @@ class DashboardDataManager:
         self.modernization_state.progress_pct = 15
 
         step_map = {
-            "reset_day0": ("reset-day0", 1, "Resetting shipboard gateway to Day 0 Legacy baseline..."),
-            "bootstrap_k3s": ("bootstrap-k3s", 2, "Step 1/3: Bootstrapping air-gapped K3s cluster in background..."),
-            "init_zarf": ("init-zarf", 3, "Step 2/3: Staging Zarf offline seed registry & internal services..."),
-            "deploy_cnf": ("cutover-cnf", 4, "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover..."),
-            "cutover_cnf": ("cutover-cnf", 4, "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover..."),
-            "full_upgrade": ("full", 4, "Executing autonomous end-to-end modernization pipeline..."),
+            "reset_day0": (
+                "reset-day0",
+                1,
+                "Resetting shipboard gateway to Day 0 Legacy baseline...",
+            ),
+            "bootstrap_k3s": (
+                "bootstrap-k3s",
+                2,
+                "Step 1/3: Bootstrapping air-gapped K3s cluster in background...",
+            ),
+            "init_zarf": (
+                "init-zarf",
+                3,
+                "Step 2/3: Staging Zarf offline seed registry & internal services...",
+            ),
+            "deploy_cnf": (
+                "cutover-cnf",
+                4,
+                "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover...",
+            ),
+            "cutover_cnf": (
+                "cutover-cnf",
+                4,
+                "Step 3/3: Deploying containerized CNF & performing Atomic Hot Cutover...",
+            ),
+            "full_upgrade": (
+                "full",
+                4,
+                "Executing autonomous end-to-end modernization pipeline...",
+            ),
         }
 
         step_arg, target_stage, trans_msg = step_map.get(action, ("full", 4, "Executing modernization action..."))
@@ -437,7 +572,12 @@ class DashboardDataManager:
         self.modernization_state.transition_message = trans_msg
 
         if action == "reset_day0":
-            self.modernization_state.stage_statuses = {"1": "SETTING_UP", "2": "PENDING", "3": "PENDING", "4": "PENDING"}
+            self.modernization_state.stage_statuses = {
+                "1": "SETTING_UP",
+                "2": "PENDING",
+                "3": "PENDING",
+                "4": "PENDING",
+            }
         elif action == "bootstrap_k3s":
             self.modernization_state.stage_statuses["2"] = "SETTING_UP"
         elif action == "init_zarf":
@@ -461,7 +601,11 @@ class DashboardDataManager:
                     cmd = f"bash {pkg_path} ship-gateway --step {step_arg}"
                     rc = self.run_logged_command(cmd, source="MODERNIZER", timeout=360)
                 else:
-                    self.add_log(source="MODERNIZER", message="[-] Error: modernize-ship-node.sh not found", level="ERROR")
+                    self.add_log(
+                        source="MODERNIZER",
+                        message="[-] Error: modernize-ship-node.sh not found",
+                        level="ERROR",
+                    )
                     rc = -1
 
                 self.modernization_state.progress_pct = 90
@@ -479,9 +623,20 @@ class DashboardDataManager:
                         self.modernization_state.cnf_status = "NOT_DEPLOYED"
                         self.modernization_state.legacy_service_status = "ACTIVE"
                         self.modernization_state.completed_stage = 1
-                        self.modernization_state.completion_message = "✓ RESET COMPLETE: Day 0 Legacy Router Active. Static metric routing in effect."
-                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "PENDING", "3": "PENDING", "4": "PENDING"}
-                        self.log_event("MODERNIZATION_STEP", "Day 0 Legacy Baseline restored. Static metric routing active.", severity="SUCCESS")
+                        self.modernization_state.completion_message = (
+                            "✓ RESET COMPLETE: Day 0 Legacy Router Active. Static metric routing in effect."
+                        )
+                        self.modernization_state.stage_statuses = {
+                            "1": "ACTIVE",
+                            "2": "PENDING",
+                            "3": "PENDING",
+                            "4": "PENDING",
+                        }
+                        self.log_event(
+                            "MODERNIZATION_STEP",
+                            "Day 0 Legacy Baseline restored. Static metric routing active.",
+                            severity="SUCCESS",
+                        )
                     elif action == "bootstrap_k3s":
                         self.modernization_state.stage = "STAGE_2_K3S_INIT"
                         self.modernization_state.stage_number = 2
@@ -493,9 +648,20 @@ class DashboardDataManager:
                         self.modernization_state.cnf_status = "NOT_DEPLOYED"
                         self.modernization_state.legacy_service_status = "ACTIVE"
                         self.modernization_state.completed_stage = 2
-                        self.modernization_state.completion_message = "✓ STAGE 2 SETUP COMPLETED: Air-gapped K3s cluster verified ready. Zero legacy downtime."
-                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "READY", "4": "PENDING"}
-                        self.log_event("MODERNIZATION_STEP", "K3s Node Ready! Legacy routing continuous and undisturbed.", severity="SUCCESS")
+                        self.modernization_state.completion_message = (
+                            "✓ STAGE 2 SETUP COMPLETED: Air-gapped K3s cluster verified ready. Zero legacy downtime."
+                        )
+                        self.modernization_state.stage_statuses = {
+                            "1": "ACTIVE",
+                            "2": "SETUP_COMPLETED",
+                            "3": "READY",
+                            "4": "PENDING",
+                        }
+                        self.log_event(
+                            "MODERNIZATION_STEP",
+                            "K3s Node Ready! Legacy routing continuous and undisturbed.",
+                            severity="SUCCESS",
+                        )
                     elif action == "init_zarf":
                         self.modernization_state.stage = "STAGE_3_ZARF_STAGING"
                         self.modernization_state.stage_number = 3
@@ -508,8 +674,17 @@ class DashboardDataManager:
                         self.modernization_state.legacy_service_status = "ACTIVE"
                         self.modernization_state.completed_stage = 3
                         self.modernization_state.completion_message = "✓ STAGE 3 SETUP COMPLETED: In-cluster Zarf seed registry operational. Seed packages staged."
-                        self.modernization_state.stage_statuses = {"1": "ACTIVE", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "READY"}
-                        self.log_event("MODERNIZATION_STEP", "Zarf Registry Operational! Offline artifacts staged.", severity="SUCCESS")
+                        self.modernization_state.stage_statuses = {
+                            "1": "ACTIVE",
+                            "2": "SETUP_COMPLETED",
+                            "3": "SETUP_COMPLETED",
+                            "4": "READY",
+                        }
+                        self.log_event(
+                            "MODERNIZATION_STEP",
+                            "Zarf Registry Operational! Offline artifacts staged.",
+                            severity="SUCCESS",
+                        )
                     else:
                         self.modernization_state.stage = "STAGE_4_CNF_ACTIVE"
                         self.modernization_state.stage_number = 4
@@ -521,16 +696,35 @@ class DashboardDataManager:
                         self.modernization_state.cnf_status = "HEALTHY"
                         self.modernization_state.legacy_service_status = "RETIRED"
                         self.modernization_state.completed_stage = 4
-                        self.modernization_state.completion_message = "✓ STAGE 4 CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering operational!"
-                        self.modernization_state.stage_statuses = {"1": "RETIRED", "2": "SETUP_COMPLETED", "3": "SETUP_COMPLETED", "4": "SETUP_COMPLETED"}
-                        self.log_event("MODERNIZATION_STEP", "HOT CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering enabled!", severity="SUCCESS")
+                        self.modernization_state.completion_message = (
+                            "✓ STAGE 4 CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering operational!"
+                        )
+                        self.modernization_state.stage_statuses = {
+                            "1": "RETIRED",
+                            "2": "SETUP_COMPLETED",
+                            "3": "SETUP_COMPLETED",
+                            "4": "SETUP_COMPLETED",
+                        }
+                        self.log_event(
+                            "MODERNIZATION_STEP",
+                            "HOT CUTOVER COMPLETE: Cloud-Native CNF Active. Sub-second SLA steering enabled!",
+                            severity="SUCCESS",
+                        )
 
                     self.modernization_state.progress_pct = 100
                     self.modernization_state.last_completed_at = time.strftime("%H:%M:%SZ", time.gmtime())
                 else:
-                    self.log_event("MODERNIZATION_STEP", f"Modernization action '{action}' failed with code {rc}.", severity="WARNING")
+                    self.log_event(
+                        "MODERNIZATION_STEP",
+                        f"Modernization action '{action}' failed with code {rc}.",
+                        severity="WARNING",
+                    )
             except Exception as e:
-                self.log_event("MODERNIZATION_STEP", f"Error during modernization action: {e}", severity="DANGER")
+                self.log_event(
+                    "MODERNIZATION_STEP",
+                    f"Error during modernization action: {e}",
+                    severity="DANGER",
+                )
             finally:
                 self.modernization_state.is_in_transition = False
                 self.modernization_state.transition_message = ""
@@ -539,15 +733,23 @@ class DashboardDataManager:
         return {
             "status": "STARTED",
             "action": action,
-            "message": f"Modernization action '{action}' launched successfully in background."
+            "message": f"Modernization action '{action}' launched successfully in background.",
         }
 
     def start(self):
         logger.info("Starting background SLA probers and telemetry collection...")
         self.telemetry.start()
         self.log_event("SYSTEM_START", "Tactical SD-WAN Dashboard & Telemetry Manager initialized.")
-        self.add_log(source="SYSTEM", message="Tactical SD-WAN Operations HUD initialized.", level="SUCCESS")
-        self.add_log(source="PROBER", message="MultiBearerTelemetryManager started across P-LEO, MILSAT, and LOS-RF bearers.", level="INFO")
+        self.add_log(
+            source="SYSTEM",
+            message="Tactical SD-WAN Operations HUD initialized.",
+            level="SUCCESS",
+        )
+        self.add_log(
+            source="PROBER",
+            message="MultiBearerTelemetryManager started across P-LEO, MILSAT, and LOS-RF bearers.",
+            level="INFO",
+        )
 
     def stop(self):
         self.telemetry.stop()
@@ -558,7 +760,7 @@ class DashboardDataManager:
             "time_str": time.strftime("%H:%M:%S", time.localtime()),
             "type": event_type,
             "message": message,
-            "severity": severity
+            "severity": severity,
         }
         with self.lock:
             self.events.insert(0, event)
@@ -584,7 +786,9 @@ class DashboardDataManager:
 
     def is_ship_gateway(self) -> bool:
         """Check if running directly on ship-gateway router VM."""
-        return (os.path.exists("/sys/class/net/eth-unclass") or os.path.exists("/sys/class/net/eth-mgmt")) and not self.is_shore_gateway()
+        return (
+            os.path.exists("/sys/class/net/eth-unclass") or os.path.exists("/sys/class/net/eth-mgmt")
+        ) and not self.is_shore_gateway()
 
     def is_local_router(self) -> bool:
         """Check if running directly on ship-gateway router VM."""
@@ -593,7 +797,7 @@ class DashboardDataManager:
     def execute_chaos_action(self, action: str, target: str = "") -> Dict[str, Any]:
         """Execute chaos impairment on local interfaces or remote nodes."""
         logger.info(f"Executing Chaos Action: {action} (Target: {target})")
-        
+
         event_msg = ""
         severity = "WARNING"
         cmds = []
@@ -603,9 +807,14 @@ class DashboardDataManager:
             local_cmds = [
                 "sudo tc qdisc del dev eth-pleops root 2>/dev/null || true",
                 "sudo tc qdisc del dev eth-milsat root 2>/dev/null || true",
-                "sudo tc qdisc del dev eth-losrf root 2>/dev/null || true"
+                "sudo tc qdisc del dev eth-losrf root 2>/dev/null || true",
             ]
-            self.chaos_state = {"pleops": "NORMAL", "milsat": "NORMAL", "losrf": "NORMAL", "active_scenario": "Clean Baseline"}
+            self.chaos_state = {
+                "pleops": "NORMAL",
+                "milsat": "NORMAL",
+                "losrf": "NORMAL",
+                "active_scenario": "Clean Baseline",
+            }
             event_msg = "Chaos Cleared: All bearer links restored to clean baseline."
             severity = "SUCCESS"
 
@@ -613,9 +822,14 @@ class DashboardDataManager:
             local_cmds = [
                 "sudo tc qdisc replace dev eth-pleops root netem delay 25ms 5ms distribution normal loss 0.1%",
                 "sudo tc qdisc replace dev eth-milsat root netem delay 250ms 25ms distribution normal loss 0.5%",
-                "sudo tc qdisc replace dev eth-losrf root netem delay 50ms 10ms distribution normal loss 1.0%"
+                "sudo tc qdisc replace dev eth-losrf root netem delay 50ms 10ms distribution normal loss 1.0%",
             ]
-            self.chaos_state = {"pleops": "TACTICAL_PROFILE", "milsat": "TACTICAL_PROFILE", "losrf": "TACTICAL_PROFILE", "active_scenario": "Tactical Multi-Bearer Baseline"}
+            self.chaos_state = {
+                "pleops": "TACTICAL_PROFILE",
+                "milsat": "TACTICAL_PROFILE",
+                "losrf": "TACTICAL_PROFILE",
+                "active_scenario": "Tactical Multi-Bearer Baseline",
+            }
             event_msg = "Tactical network profiles applied across all bearers (P-LEO, MILSAT, LOS-RF)."
             severity = "INFO"
 
@@ -627,14 +841,18 @@ class DashboardDataManager:
             severity = "DANGER"
 
         elif action == "rain_fade_milsat":
-            local_cmds = ["sudo tc qdisc replace dev eth-milsat root netem delay 350ms 40ms distribution normal loss 15%"]
+            local_cmds = [
+                "sudo tc qdisc replace dev eth-milsat root netem delay 350ms 40ms distribution normal loss 15%"
+            ]
             self.chaos_state["milsat"] = "RAIN_FADE_DEGRADED"
             self.chaos_state["active_scenario"] = "Severe Satellite Rain Fade"
             event_msg = "ENVIRONMENTAL CHAOS: Severe Rain Fade (+350ms delay, 15% loss) on MILSATCOM."
             severity = "WARNING"
 
         elif action == "degrade_losrf":
-            local_cmds = ["sudo tc qdisc replace dev eth-losrf root netem delay 150ms 30ms distribution normal loss 20%"]
+            local_cmds = [
+                "sudo tc qdisc replace dev eth-losrf root netem delay 150ms 30ms distribution normal loss 20%"
+            ]
             self.chaos_state["losrf"] = "RF_JAMMING_DEGRADED"
             self.chaos_state["active_scenario"] = "Tactical RF Electronic Attack"
             event_msg = "RF INTERFERENCE: Severe multipath fading (+150ms, 20% loss) on Tactical LOS-RF."
@@ -647,7 +865,9 @@ class DashboardDataManager:
             severity = "SUCCESS"
 
         elif action == "flap_link":
-            local_cmds = ["sudo tc qdisc replace dev eth-pleops root netem loss 100%; sleep 1; sudo tc qdisc del dev eth-pleops root 2>/dev/null || true"]
+            local_cmds = [
+                "sudo tc qdisc replace dev eth-pleops root netem loss 100%; sleep 1; sudo tc qdisc del dev eth-pleops root 2>/dev/null || true"
+            ]
             self.chaos_state["pleops"] = "FLAPPING"
             self.chaos_state["active_scenario"] = "Intermittent Link Flapping"
             event_msg = "CHAOS SIMULATION: Rapid link flapping cycle triggered on P-LEO."
@@ -668,23 +888,36 @@ class DashboardDataManager:
             elif action in ("jam_pleops", "cut_pleops"):
                 cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops"]
             elif action == "rain_fade_milsat":
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade milsat '350ms 40ms' '15%'"]
+                cmds = [
+                    f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade milsat '350ms 40ms' '15%'"
+                ]
             elif action == "degrade_losrf":
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade losrf '150ms 30ms' '20%'"]
+                cmds = [
+                    f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} degrade losrf '150ms 30ms' '20%'"
+                ]
             elif action == "restore_bearer" and target:
                 cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore {target}"]
             elif action == "flap_link":
-                cmds = [f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops; sleep 1; bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore pleops"]
+                cmds = [
+                    f"bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} cut pleops; sleep 1; bash {os.path.join(PROJECT_ROOT, 'tests/chaos/impair-bearer.sh')} restore pleops"
+                ]
 
         res_code = 0
         res_out = []
-        is_root = (os.geteuid() == 0)
+        is_root = os.geteuid() == 0
         for c in cmds:
             try:
                 cmd_to_run = c
                 if is_root and cmd_to_run.startswith("sudo "):
                     cmd_to_run = cmd_to_run[5:]
-                proc = subprocess.run(cmd_to_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+                proc = subprocess.run(
+                    cmd_to_run,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=10,
+                )
                 res_code = max(res_code, proc.returncode)
                 res_out.append(proc.stdout)
                 if proc.stderr:
@@ -698,7 +931,7 @@ class DashboardDataManager:
             "status": "OK" if res_code == 0 else "ERROR",
             "action": action,
             "chaos_state": self.chaos_state,
-            "output": "\n".join(res_out)
+            "output": "\n".join(res_out),
         }
 
     def get_router_kernel_stats(self) -> Dict[str, Any]:
@@ -710,13 +943,25 @@ class DashboardDataManager:
         # If running on host, scrape router VM via SSH
         try:
             ssh_cmd = [
-                "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "ConnectTimeout=1",
-                "-J", "sandbox-hypervisor-node",
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+                "-o",
+                "ConnectTimeout=1",
+                "-J",
+                "sandbox-hypervisor-node",
                 "bjarrett@10.200.1.2",
-                "cat /proc/net/dev"
+                "cat /proc/net/dev",
             ]
-            res = subprocess.run(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=1.5)
+            res = subprocess.run(
+                ssh_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=1.5,
+            )
             if res.returncode == 0:
                 metrics = self.interface_collector.update(res.stdout)
                 return {k: asdict(v) for k, v in metrics.items()}
@@ -729,17 +974,35 @@ class DashboardDataManager:
         """Query active primary default route on router by finding lowest metric default route."""
         try:
             if self.is_local_router():
-                res = subprocess.run("ip -j route show default 2>/dev/null || ip route show default", shell=True, stdout=subprocess.PIPE, text=True, timeout=1.0)
+                res = subprocess.run(
+                    "ip -j route show default 2>/dev/null || ip route show default",
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                    timeout=1.0,
+                )
                 out = res.stdout.strip()
             else:
                 ssh_cmd = [
-                    "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
-                    "-o", "ConnectTimeout=1",
-                    "-J", "sandbox-hypervisor-node",
+                    "ssh",
+                    "-o",
+                    "StrictHostKeyChecking=no",
+                    "-o",
+                    "UserKnownHostsFile=/dev/null",
+                    "-o",
+                    "ConnectTimeout=1",
+                    "-J",
+                    "sandbox-hypervisor-node",
                     "bjarrett@10.200.1.2",
-                    "ip -j route show default 2>/dev/null || ip route show default"
+                    "ip -j route show default 2>/dev/null || ip route show default",
                 ]
-                res = subprocess.run(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=1.5)
+                res = subprocess.run(
+                    ssh_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=1.5,
+                )
                 out = res.stdout.strip()
 
             # 1. Parse JSON if supported
@@ -802,7 +1065,7 @@ class DashboardDataManager:
                         "rx_pps": sb.get("rx_pps", 0.0),
                         "tx_pps": sb.get("tx_pps", 0.0),
                         "total_dropped": sb.get("total_dropped", 0),
-                        "chaos_state": self.chaos_state.get(name, "NORMAL")
+                        "chaos_state": self.chaos_state.get(name, "NORMAL"),
                     }
 
                 if all(r == "FMC" for r in all_states):
@@ -813,20 +1076,25 @@ class DashboardDataManager:
                     overall_readiness = "NMC"
 
                 enclave_stats = self.query_http_json("http://10.10.1.10:9001/status") or {
-                    "status": "STREAMING", "packets_per_sec": 40.0, "throughput_kbps": 180.0,
-                    "total_sent": int((now % 10000) * 40), "target_host": "10.200.1.10"
+                    "status": "STREAMING",
+                    "packets_per_sec": 40.0,
+                    "throughput_kbps": 180.0,
+                    "total_sent": int((now % 10000) * 40),
+                    "target_host": "10.200.1.10",
                 }
                 shore_stats = self.query_http_json("http://10.200.1.10:9001/status") or {
-                    "status": "INGESTING", "packets_per_sec": 39.8, "throughput_kbps": 179.5,
+                    "status": "INGESTING",
+                    "packets_per_sec": 39.8,
+                    "throughput_kbps": 179.5,
                     "total_packets_received": int((now % 10000) * 39.8),
-                    "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0)
+                    "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
                 }
 
                 if self.cached_state and self.cached_state.primary_bearer != actual_primary:
                     self.log_event(
                         "ROUTE_FAILOVER",
                         f"Automated Path Steering Switch: [{self.cached_state.primary_bearer.upper()}] -> [{actual_primary.upper()}]",
-                        severity="WARNING"
+                        severity="WARNING",
                     )
 
                 with self.lock:
@@ -845,7 +1113,7 @@ class DashboardDataManager:
                     recent_events=recent_events,
                     resilience_benchmark=benchmark_data,
                     modernization=asdict(modern_state),
-                    last_updated=now
+                    last_updated=now,
                 )
                 self.cached_state = state
                 return state
@@ -886,7 +1154,7 @@ class DashboardDataManager:
             tx_kbps = k_stat.get("tx_kbps", 0.0)
             throughput_kbps = k_stat.get("throughput_kbps", rx_kbps + tx_kbps)
 
-            is_active = (name == actual_primary)
+            is_active = name == actual_primary
 
             bearer_details[name] = {
                 "name": cfg.name,
@@ -905,7 +1173,7 @@ class DashboardDataManager:
                 "rx_pps": k_stat.get("rx_pps", 0.0),
                 "tx_pps": k_stat.get("tx_pps", 0.0),
                 "total_dropped": total_drops,
-                "chaos_state": self.chaos_state.get(name, "NORMAL")
+                "chaos_state": self.chaos_state.get(name, "NORMAL"),
             }
 
         # 5. Overall System Readiness Banner
@@ -922,15 +1190,15 @@ class DashboardDataManager:
             "packets_per_sec": 40.0,
             "throughput_kbps": 180.0,
             "total_sent": int((now % 10000) * 40),
-            "target_host": "10.200.1.10"
+            "target_host": "10.200.1.10",
         }
-        
+
         shore_stats = self.query_http_json("http://10.200.1.10:9001/status") or {
             "status": "INGESTING",
             "packets_per_sec": 39.8,
             "throughput_kbps": 179.5,
             "total_packets_received": int((now % 10000) * 39.8),
-            "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0)
+            "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
         }
 
         # Check for route change events
@@ -938,7 +1206,7 @@ class DashboardDataManager:
             self.log_event(
                 "ROUTE_FAILOVER",
                 f"Automated Path Steering Switch: [{self.cached_state.primary_bearer.upper()}] -> [{actual_primary.upper()}]",
-                severity="WARNING"
+                severity="WARNING",
             )
 
         with self.lock:
@@ -957,7 +1225,7 @@ class DashboardDataManager:
             recent_events=recent_events,
             resilience_benchmark=benchmark_data,
             modernization=asdict(modern_state),
-            last_updated=now
+            last_updated=now,
         )
         self.cached_state = state
         return state
@@ -972,70 +1240,89 @@ class DashboardDataManager:
         readiness_val = 2 if state.overall_readiness == "FMC" else (1 if state.overall_readiness == "PMC" else 0)
         lines.append(f'sdn_system_readiness{{readiness="{state.overall_readiness}"}} {readiness_val}')
 
-        lines.extend([
-            "# HELP sdn_bearer_latency_seconds Measured RTT latency per tactical bearer in seconds",
-            "# TYPE sdn_bearer_latency_seconds gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_latency_seconds Measured RTT latency per tactical bearer in seconds",
+                "# TYPE sdn_bearer_latency_seconds gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             latency_sec = b["latency_ms"] / 1000.0
-            lines.append(f'sdn_bearer_latency_seconds{{bearer="{name}",interface="{b["interface"]}"}} {latency_sec:.4f}')
+            lines.append(
+                f'sdn_bearer_latency_seconds{{bearer="{name}",interface="{b["interface"]}"}} {latency_sec:.4f}'
+            )
 
-        lines.extend([
-            "# HELP sdn_bearer_jitter_seconds Measured packet jitter per tactical bearer in seconds",
-            "# TYPE sdn_bearer_jitter_seconds gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_jitter_seconds Measured packet jitter per tactical bearer in seconds",
+                "# TYPE sdn_bearer_jitter_seconds gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             jitter_sec = b["jitter_ms"] / 1000.0
             lines.append(f'sdn_bearer_jitter_seconds{{bearer="{name}",interface="{b["interface"]}"}} {jitter_sec:.4f}')
 
-        lines.extend([
-            "# HELP sdn_bearer_loss_ratio Packet loss ratio per tactical bearer (0.0 to 1.0)",
-            "# TYPE sdn_bearer_loss_ratio gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_loss_ratio Packet loss ratio per tactical bearer (0.0 to 1.0)",
+                "# TYPE sdn_bearer_loss_ratio gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             loss_ratio = b["packet_loss_pct"] / 100.0
             lines.append(f'sdn_bearer_loss_ratio{{bearer="{name}",interface="{b["interface"]}"}} {loss_ratio:.4f}')
 
-        lines.extend([
-            "# HELP sdn_bearer_metric Linux kernel route metric computed for the bearer link",
-            "# TYPE sdn_bearer_metric gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_metric Linux kernel route metric computed for the bearer link",
+                "# TYPE sdn_bearer_metric gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             lines.append(f'sdn_bearer_metric{{bearer="{name}",interface="{b["interface"]}"}} {b["computed_metric"]}')
 
-        lines.extend([
-            "# HELP sdn_bearer_score Computed SLA health score (0-100)",
-            "# TYPE sdn_bearer_score gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_score Computed SLA health score (0-100)",
+                "# TYPE sdn_bearer_score gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             lines.append(f'sdn_bearer_score{{bearer="{name}",interface="{b["interface"]}"}} {b["score"]:.1f}')
 
-        lines.extend([
-            "# HELP sdn_bearer_active Indicates if the bearer is currently the lowest-metric primary route (1 or 0)",
-            "# TYPE sdn_bearer_active gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_active Indicates if the bearer is currently the lowest-metric primary route (1 or 0)",
+                "# TYPE sdn_bearer_active gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             active_val = 1 if b["is_active_route"] else 0
             lines.append(f'sdn_bearer_active{{bearer="{name}",interface="{b["interface"]}"}} {active_val}')
 
-        lines.extend([
-            "# HELP sdn_bearer_throughput_bytes_per_second Bandwidth throughput in bytes/sec",
-            "# TYPE sdn_bearer_throughput_bytes_per_second gauge",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_bearer_throughput_bytes_per_second Bandwidth throughput in bytes/sec",
+                "# TYPE sdn_bearer_throughput_bytes_per_second gauge",
+            ]
+        )
         for name, b in state.bearers.items():
             rx_bytes_sec = (b["rx_kbps"] * 1000.0) / 8.0
             tx_bytes_sec = (b["tx_kbps"] * 1000.0) / 8.0
             lines.append(f'sdn_bearer_throughput_bytes_per_second{{bearer="{name}",direction="rx"}} {rx_bytes_sec:.1f}')
             lines.append(f'sdn_bearer_throughput_bytes_per_second{{bearer="{name}",direction="tx"}} {tx_bytes_sec:.1f}')
 
-        lines.extend([
-            "# HELP sdn_failover_events_total Total number of automated path steering failover events",
-            "# TYPE sdn_failover_events_total counter",
-        ])
+        lines.extend(
+            [
+                "# HELP sdn_failover_events_total Total number of automated path steering failover events",
+                "# TYPE sdn_failover_events_total counter",
+            ]
+        )
         failover_count = sum(1 for e in state.recent_events if e.get("type") == "ROUTE_FAILOVER")
-        lines.append(f'sdn_failover_events_total {failover_count}')
+        lines.append(f"sdn_failover_events_total {failover_count}")
 
         return "\n".join(lines) + "\n"
+
 
 class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
     data_manager: DashboardDataManager = None
@@ -1065,7 +1352,10 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header("Content-Type", "text/html; charset=utf-8")
                     self.send_header("Content-Length", str(len(content)))
-                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    self.send_header(
+                        "Cache-Control",
+                        "no-cache, no-store, must-revalidate, max-age=0",
+                    )
                     self.send_header("Pragma", "no-cache")
                     self.send_header("Expires", "0")
                     self.send_header("Access-Control-Allow-Origin", "*")
@@ -1080,7 +1370,7 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
                 "node": "SHORE-GATEWAY-HQ",
                 "service": "Tactical Operations HUD & Modernization Orchestrator",
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "active_bearers": ["pleops", "milsat", "losrf"]
+                "active_bearers": ["pleops", "milsat", "losrf"],
             }
             content = json.dumps(resp).encode("utf-8")
             self.send_response(200)
@@ -1332,6 +1622,7 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
             return
         logger.debug(f"{self.address_string()} - {format % args}")
 
+
 def run_server(port: int = DEFAULT_PORT):
     os.makedirs(STATIC_DIR, exist_ok=True)
     manager = DashboardDataManager()
@@ -1352,8 +1643,10 @@ def run_server(port: int = DEFAULT_PORT):
         manager.stop()
         server.server_close()
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="HTTP server port")
     args = parser.parse_args()

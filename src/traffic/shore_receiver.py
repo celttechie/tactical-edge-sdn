@@ -6,24 +6,22 @@ records packet arrival statistics, and echoes downlink command acknowledgments.
 Also exposes an HTTP status endpoint on port 9001 for real-time telemetry querying.
 """
 
-import socket
-import time
-import json
-import threading
-import logging
 import argparse
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from dataclasses import dataclass, asdict
+import json
+import logging
+import socket
+import threading
+import time
+from dataclasses import asdict, dataclass
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [shore-ingest] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [shore-ingest] %(message)s")
 logger = logging.getLogger("shore-ingest")
 
 LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = 9000
 STATUS_PORT = 9001
+
 
 @dataclass
 class IngestStats:
@@ -36,8 +34,10 @@ class IngestStats:
     last_packet_ts: float = 0.0
     status: str = "INGESTING"
 
+
 stats = IngestStats()
 lock = threading.Lock()
+
 
 class StatsHTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -58,14 +58,15 @@ class StatsHTTPHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # Suppress normal access logs
 
+
 def start_http_status_server(port: int = STATUS_PORT):
     server = HTTPServer(("0.0.0.0", port), StatsHTTPHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
     logger.info(f"Shore Receiver Status HTTP Server listening on port {port}")
 
+
 def udp_receiver_loop(listen_port: int = LISTEN_PORT, status_port: int = STATUS_PORT):
-    global stats
     start_http_status_server(status_port)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -90,7 +91,7 @@ def udp_receiver_loop(listen_port: int = LISTEN_PORT, status_port: int = STATUS_
                     payload = json.loads(data.decode("utf-8"))
                     seq = payload.get("seq", 0)
                     if stats.last_seq > 0 and seq > stats.last_seq + 1:
-                        stats.sequence_gaps += (seq - stats.last_seq - 1)
+                        stats.sequence_gaps += seq - stats.last_seq - 1
                     stats.last_seq = seq
                 except Exception:
                     pass
@@ -103,7 +104,7 @@ def udp_receiver_loop(listen_port: int = LISTEN_PORT, status_port: int = STATUS_
                     bytes_diff = stats.total_bytes_received - last_calc_bytes
                     stats.packets_per_sec = round(pkts_diff / elapsed, 1)
                     stats.throughput_kbps = round((bytes_diff * 8.0) / (elapsed * 1000.0), 1)
-                
+
                 logger.info(
                     f"Ingest Stream -> Rate: {stats.packets_per_sec:5.1f} pkts/s | "
                     f"Throughput: {stats.throughput_kbps:6.1f} Kbps | "
@@ -115,16 +116,19 @@ def udp_receiver_loop(listen_port: int = LISTEN_PORT, status_port: int = STATUS_
 
             # Echo downlink command ACK periodically
             if stats.total_packets_received % 10 == 0:
-                ack_payload = json.dumps({
-                    "type": "DOWNLINK_C2_ACK",
-                    "echo_seq": stats.last_seq,
-                    "shore_ts": time.time()
-                }).encode("utf-8")
+                ack_payload = json.dumps(
+                    {
+                        "type": "DOWNLINK_C2_ACK",
+                        "echo_seq": stats.last_seq,
+                        "shore_ts": time.time(),
+                    }
+                ).encode("utf-8")
                 sock.sendto(ack_payload, addr)
 
         except Exception as e:
             logger.error(f"Error in ingest loop: {e}")
             time.sleep(0.1)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -4,15 +4,16 @@ Performs continuous link-quality sampling (latency, jitter, and loss percentage)
 across tactical bearer interfaces.
 """
 
-import time
+import select
 import socket
 import struct
-import select
 import subprocess
 import threading
+import time
 from collections import deque
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
+
 
 @dataclass
 class LinkStats:
@@ -26,18 +27,27 @@ class LinkStats:
     total_probes_lost: int
     last_update_ts: float
 
+
 class BearerSLAProber:
     """
     Continuous active link prober for a single bearer.
     Uses socket ICMP / UDP echo ping or HTTP probes to evaluate bearer metrics.
     """
-    def __init__(self, name: str, target_ip: str, interface: str, window_size: int = 10, timeout: float = 2.0):
+
+    def __init__(
+        self,
+        name: str,
+        target_ip: str,
+        interface: str,
+        window_size: int = 10,
+        timeout: float = 2.0,
+    ):
         self.name = name
         self.target_ip = target_ip
         self.interface = interface
         self.window_size = window_size
         self.timeout = timeout
-        
+
         self.samples: deque = deque(maxlen=window_size)
         self.seq = 0
         self.total_sent = 0
@@ -53,7 +63,7 @@ class BearerSLAProber:
         self.seq += 1
         self.total_sent += 1
         t0 = time.time()
-        
+
         # Test TCP/HTTP port 8080 probe to shore gateway
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,11 +81,20 @@ class BearerSLAProber:
         # Fallback to ICMP ping bound to interface
         try:
             res = subprocess.run(
-                ["ping", "-c", "1", "-W", str(int(self.timeout)), "-I", self.interface, self.target_ip],
+                [
+                    "ping",
+                    "-c",
+                    "1",
+                    "-W",
+                    str(int(self.timeout)),
+                    "-I",
+                    self.interface,
+                    self.target_ip,
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=self.timeout + 0.2
+                timeout=self.timeout + 0.2,
             )
             if res.returncode == 0:
                 # Parse rtt from ping output: rtt min/avg/max/mdev = 40.123/...
@@ -151,8 +170,10 @@ class BearerSLAProber:
                 last_update_ts=time.time(),
             )
 
+
 class MultiBearerTelemetryManager:
     """Manages concurrent SLA probing threads across all active bearers."""
+
     def __init__(self, bearers: Dict[str, dict], window_size: int = 10, interval: float = 0.5):
         self.interval = interval
         self.probers: Dict[str, BearerSLAProber] = {}
@@ -161,7 +182,7 @@ class MultiBearerTelemetryManager:
                 name=name,
                 target_ip=cfg["target_ip"],
                 interface=cfg["interface"],
-                window_size=window_size
+                window_size=window_size,
             )
         self._running = False
         self._threads: list = []

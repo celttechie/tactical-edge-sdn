@@ -21,7 +21,6 @@ spec:
       {{- end }}
     spec:
       hostNetwork: true
-      hostPID: true
       dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: {{ include "tactical-sdn.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
@@ -49,6 +48,12 @@ spec:
             - name: sdn-config
               mountPath: /app/config
               readOnly: true
+            - name: run-dir
+              mountPath: /run
+            - name: tmp-dir
+              mountPath: /tmp
+            - name: log-dir
+              mountPath: /var/log
       volumes:
         - name: host-modules
           hostPath:
@@ -56,6 +61,12 @@ spec:
         - name: sdn-config
           configMap:
             name: {{ include "tactical-sdn.fullname" . }}-config
+        - name: run-dir
+          emptyDir: {}
+        - name: tmp-dir
+          emptyDir: {}
+        - name: log-dir
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
