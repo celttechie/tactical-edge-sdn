@@ -23,7 +23,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black isort pyroute2 pyyaml prometheus_client
+          pip install -r requirements.txt
 
       - name: Check Code Formatting (Black & isort)
         run: |
@@ -69,9 +69,8 @@ jobs:
 
       - name: Install Lula CLI
         run: |
-          curl -sSL "https://github.com/defenseunicorns/lula/releases/latest/download/lula_$(uname -s)_$(uname -m).tar.gz" -o lula.tar.gz || \
-          curl -sSL "https://github.com/defenseunicorns/lula/releases/download/v0.8.3/lula_Linux_x86_64.tar.gz" -o lula.tar.gz
-          tar -xzf lula.tar.gz lula
+          curl -sSL "https://github.com/defenseunicorns-labs/lula1/releases/download/v0.16.0/lula_v0.16.0_Linux_amd64" -o lula
+          chmod +x lula
           sudo mv lula /usr/local/bin/
           lula version
 
