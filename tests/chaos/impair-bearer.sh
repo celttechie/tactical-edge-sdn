@@ -99,7 +99,11 @@ case "${1:-}" in
                 clear_netem_on_bridge_and_taps "$BR_DEV"
             fi
         done
-        echo "==> All bridges and taps reset to clean state."
+        # Also ensure no residual host/VM-level qdiscs remain on gateways
+        for node in ship-gateway shore-gateway; do
+            ssh -o StrictHostKeyChecking=no "$node" "for iface in eth-pleops eth-milsat eth-losrf; do sudo tc qdisc del dev \$iface root 2>/dev/null || true; done" 2>/dev/null || true
+        done
+        echo "==> All bridges, taps, and host endpoints reset to clean state."
         ;;
 
     status)

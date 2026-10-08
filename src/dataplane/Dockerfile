@@ -5,7 +5,9 @@
 
 FROM debian:12-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # Install FRRouting, WireGuard, iptables, iproute2, and Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -28,7 +30,7 @@ WORKDIR /app
 # Copy FRR configs
 COPY src/dataplane/frr/daemons /etc/frr/daemons
 COPY src/dataplane/frr/frr.conf /etc/frr/frr.conf
-RUN chown -R frr:frr /etc/frr && chmod 640 /etc/frr/*
+RUN chown -R frr:frr /etc/frr && chmod 755 /etc/frr && chmod 644 /etc/frr/*
 
 # Copy application source code and documentation/benchmark data
 COPY src/ /app/src/

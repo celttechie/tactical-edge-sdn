@@ -4,7 +4,7 @@
 
 image:
   repository: tactical-sdn-stack
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: "v0.3.0"
 
 imagePullSecrets: []
@@ -21,12 +21,17 @@ podLabels: {}
 podSecurityContext: {}
 
 securityContext:
-  privileged: true
+  privileged: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
   capabilities:
+    drop:
+      - ALL
     add:
       - NET_ADMIN
       - NET_RAW
-      - SYS_ADMIN
+  seccompProfile:
+    type: RuntimeDefault
 
 resources:
   limits:

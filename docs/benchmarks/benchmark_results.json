@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-07T21:42:55Z",
+  "timestamp": "2026-10-08T14:25:21Z",
   "overall_status": "PASSED",
-  "avg_detection_latency_ms": 5106.9,
+  "avg_detection_latency_ms": 5366.8,
   "avg_cutover_latency_ms": 450.0,
   "avg_packet_survival_pct": 100.0,
   "scenarios": [
@@ -9,30 +9,30 @@
       "scenario_name": "Satellite Rain Fade (Progressive Degradation)",
       "target_bearer": "pleops (P-LEO)",
       "injected_impairment": "300ms delay + 15% loss",
-      "detection_time_ms": 6050.7,
+      "detection_time_ms": 6140.1,
       "cutover_time_ms": 100.0,
-      "total_failover_ms": 6150.7,
+      "total_failover_ms": 6240.1,
       "probes_sent": 15,
       "probes_successful": 15,
       "packet_survival_pct": 100.0,
       "promoted_route": "eth-milsat",
-      "alternate_c2_latency_ms": 2922.3,
-      "recovery_time_ms": 14201.7,
+      "alternate_c2_latency_ms": 3662.2,
+      "recovery_time_ms": 13187.6,
       "status": "PASSED"
     },
     {
       "scenario_name": "RF Electronic Jamming Blackout",
       "target_bearer": "pleops (P-LEO)",
       "injected_impairment": "100% instantaneous packet severance",
-      "detection_time_ms": 5270.0,
+      "detection_time_ms": 5960.2,
       "cutover_time_ms": 100.0,
-      "total_failover_ms": 5370.0,
+      "total_failover_ms": 6060.2,
       "probes_sent": 15,
       "probes_successful": 15,
       "packet_survival_pct": 100.0,
       "promoted_route": "eth-milsat",
-      "alternate_c2_latency_ms": 2749.2,
-      "recovery_time_ms": 13078.4,
+      "alternate_c2_latency_ms": 2814.4,
+      "recovery_time_ms": 13343.6,
       "status": "PASSED"
     },
     {
@@ -46,7 +46,7 @@
       "probes_successful": 15,
       "packet_survival_pct": 100.0,
       "promoted_route": "eth-pleops",
-      "alternate_c2_latency_ms": 1802.5,
+      "alternate_c2_latency_ms": 1711.8,
       "recovery_time_ms": 3800.0,
       "status": "PASSED"
     }
