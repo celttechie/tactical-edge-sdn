@@ -10,14 +10,22 @@ Demonstrates:
 4. Hitless recovery: When P-LEO SLA normalizes, traffic seamlessly returns to primary bearer.
 """
 
-import subprocess
-import time
 import json
+import subprocess
 import sys
+import time
 from datetime import datetime
 
 # Router SSH connection target (uses ~/.ssh/config alias ship-gateway)
-SSH_ROUTER_CMD = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "ship-gateway"]
+SSH_ROUTER_CMD = [
+    "ssh",
+    "-o",
+    "StrictHostKeyChecking=no",
+    "-o",
+    "UserKnownHostsFile=/dev/null",
+    "ship-gateway",
+]
+
 
 def run_cmd(cmd, check=True):
     if isinstance(cmd, str):
@@ -28,9 +36,11 @@ def run_cmd(cmd, check=True):
         raise RuntimeError(f"Command failed: {cmd}\nStderr: {res.stderr}\nStdout: {res.stdout}")
     return res
 
+
 def exec_on_router(command: str) -> str:
     res = run_cmd(SSH_ROUTER_CMD + [command], check=False)
     return res.stdout.strip()
+
 
 def probe_enclave_to_shore(target_ip: str = "10.100.1.1"):
     """Probe Shore Gateway from Enclave Client via router."""
@@ -41,6 +51,7 @@ def probe_enclave_to_shore(target_ip: str = "10.100.1.1"):
     if res.returncode == 0 and "OPERATIONAL" in res.stdout:
         return True, elapsed_ms, res.stdout.strip()
     return False, elapsed_ms, res.stderr.strip() or res.stdout.strip()
+
 
 def get_router_active_primary() -> str:
     """Reads the current lowest metric route on the router."""
@@ -61,6 +72,7 @@ def get_router_active_primary() -> str:
                 primary_if = dev
     return f"{primary_if} (metric {lowest_metric})"
 
+
 def test_sdn_dynamic_steering():
     print("=" * 75)
     print("TEST: Tactical Edge SDN - Milestone 2: Cloud-Native SD-WAN Dynamic Steering")
@@ -72,7 +84,9 @@ def test_sdn_dynamic_steering():
 
     # 2. Ensure SD-WAN Controller is active on the router (CNF pod or systemd service)
     print("\n[Step 2] Ensuring SD-WAN Policy Controller is active on router...")
-    chk = exec_on_router("sudo k3s kubectl get pods -n tactical-sdn 2>/dev/null | grep Running || systemctl is-active sdwan-controller.service || true")
+    chk = exec_on_router(
+        "sudo k3s kubectl get pods -n tactical-sdn 2>/dev/null | grep Running || systemctl is-active sdwan-controller.service || true"
+    )
     if "Running" not in chk and "active" not in chk:
         exec_on_router("sudo systemctl restart sdwan-controller.service")
     time.sleep(3)
@@ -148,6 +162,7 @@ def test_sdn_dynamic_steering():
     print(" [✓] Automated dynamic path steering verified under severe DDIL link severance")
     print(" [✓] Hitless failover and re-convergence back to primary link confirmed")
     print("=" * 75)
+
 
 if __name__ == "__main__":
     test_sdn_dynamic_steering()

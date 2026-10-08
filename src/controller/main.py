@@ -6,22 +6,22 @@ and lightweight Prometheus / Health Telemetry endpoint.
 Decoupled from web UI per ADR 0008 (Out-of-Band Management Architecture).
 """
 
-import os
-import time
-import signal
-import sys
-import logging
 import argparse
 import json
+import logging
+import os
+import signal
+import sys
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer, HTTPServer
-from typing import Dict, Any, Optional
+import time
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
+from typing import Any, Dict, Optional
 
-from .config import ControllerConfig, DEFAULT_CONFIG
-from .sla_prober import MultiBearerTelemetryManager
-from .policy_engine import SDWANPolicyEngine, LinkHealthState
-from .route_actuator import RouteActuator
+from .config import DEFAULT_CONFIG, ControllerConfig
 from .interface_stats import InterfaceStatsCollector
+from .policy_engine import LinkHealthState, SDWANPolicyEngine
+from .route_actuator import RouteActuator
+from .sla_prober import MultiBearerTelemetryManager
 
 
 def setup_logging(verbose: bool = False):
@@ -89,36 +89,44 @@ class SDWANTelemetryHTTPHandler(BaseHTTPRequestHandler):
         for b_name, s in stats.items():
             lines.append(f'sdn_bearer_latency_ms{{bearer="{b_name}"}} {s.latency_ms:.2f}')
 
-        lines.extend([
-            "",
-            "# HELP sdn_bearer_jitter_ms Measured latency jitter in milliseconds",
-            "# TYPE sdn_bearer_jitter_ms gauge",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP sdn_bearer_jitter_ms Measured latency jitter in milliseconds",
+                "# TYPE sdn_bearer_jitter_ms gauge",
+            ]
+        )
         for b_name, s in stats.items():
             lines.append(f'sdn_bearer_jitter_ms{{bearer="{b_name}"}} {s.jitter_ms:.2f}')
 
-        lines.extend([
-            "",
-            "# HELP sdn_bearer_loss_pct Measured packet loss percentage",
-            "# TYPE sdn_bearer_loss_pct gauge",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP sdn_bearer_loss_pct Measured packet loss percentage",
+                "# TYPE sdn_bearer_loss_pct gauge",
+            ]
+        )
         for b_name, s in stats.items():
             lines.append(f'sdn_bearer_loss_pct{{bearer="{b_name}"}} {s.packet_loss_pct:.2f}')
 
-        lines.extend([
-            "",
-            "# HELP sdn_bearer_active Indicates if bearer is currently active primary route (1 or 0)",
-            "# TYPE sdn_bearer_active gauge",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP sdn_bearer_active Indicates if bearer is currently active primary route (1 or 0)",
+                "# TYPE sdn_bearer_active gauge",
+            ]
+        )
         for b_name in daemon.config.bearers:
             is_active = 1 if b_name == primary else 0
             lines.append(f'sdn_bearer_active{{bearer="{b_name}"}} {is_active}')
 
-        lines.extend([
-            "",
-            "# HELP sdn_bearer_computed_metric Current computed routing metric applied in kernel",
-            "# TYPE sdn_bearer_computed_metric gauge",
-        ])
+        lines.extend(
+            [
+                "",
+                "# HELP sdn_bearer_computed_metric Current computed routing metric applied in kernel",
+                "# TYPE sdn_bearer_computed_metric gauge",
+            ]
+        )
         for b_name, ev in evals.items():
             lines.append(f'sdn_bearer_computed_metric{{bearer="{b_name}"}} {ev.computed_metric}')
 
@@ -152,7 +160,7 @@ class SDWANTelemetryHTTPHandler(BaseHTTPRequestHandler):
                 "name": b_name,
                 "interface": iface,
                 "is_active_route": (b_name == primary),
-                "state": ev.state.value if ev else ("HEALTHY" if s.is_alive else "DOWN"),
+                "state": (ev.state.value if ev else ("HEALTHY" if s.is_alive else "DOWN")),
                 "latency_ms": round(s.latency_ms, 2),
                 "jitter_ms": round(s.jitter_ms, 2),
                 "packet_loss_pct": round(s.packet_loss_pct, 2),
@@ -236,7 +244,9 @@ class SDWANControllerDaemon:
             self.http_server = ThreadingHTTPServer(("0.0.0.0", self.telemetry_port), SDWANTelemetryHTTPHandler)
             self.http_thread = threading.Thread(target=self.http_server.serve_forever, daemon=True)
             self.http_thread.start()
-            self.logger.info(f"SD-WAN Prometheus /metrics endpoint active at http://0.0.0.0:{self.telemetry_port}/metrics")
+            self.logger.info(
+                f"SD-WAN Prometheus /metrics endpoint active at http://0.0.0.0:{self.telemetry_port}/metrics"
+            )
         except Exception as e:
             self.logger.error(f"Failed to start telemetry endpoint server: {e}")
 
@@ -262,9 +272,7 @@ class SDWANControllerDaemon:
         for name, ev in evaluations.items():
             s = ev.stats
             status_symbol = (
-                "✓"
-                if ev.state == LinkHealthState.HEALTHY
-                else ("⚠" if ev.state == LinkHealthState.DEGRADED else "✗")
+                "✓" if ev.state == LinkHealthState.HEALTHY else ("⚠" if ev.state == LinkHealthState.DEGRADED else "✗")
             )
             self.logger.info(
                 f"[{status_symbol}] {name:7s} | State: {ev.state.value:8s} | "
@@ -283,7 +291,12 @@ def main():
     parser = argparse.ArgumentParser(description="Tactical Edge SD-WAN Policy Controller Daemon")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose debug logging")
     parser.add_argument("--interval", type=float, default=0.5, help="Probe interval in seconds")
-    parser.add_argument("--check-interval", type=float, default=1.0, help="SLA check interval in seconds")
+    parser.add_argument(
+        "--check-interval",
+        type=float,
+        default=1.0,
+        help="SLA check interval in seconds",
+    )
     parser.add_argument("--port", type=int, default=8080, help="Telemetry HTTP /metrics port")
     args = parser.parse_args()
 

@@ -1,0 +1,45 @@
+[project]
+name = "tactical-edge-sdn"
+version = "0.3.0"
+description = "Tactical Edge SD-WAN Dataplane and Dynamic SLA Policy Controller for DDIL Environments"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Tactical SDN Engineering Team" }
+]
+dependencies = [
+    "pyroute2>=0.7.12",
+    "pyyaml>=6.0.1",
+    "prometheus_client>=0.20.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8>=7.0.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "pytest>=8.0.0"
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = ["src", "tests"]
+skip_glob = ["**/build/*", "**/.venv/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]

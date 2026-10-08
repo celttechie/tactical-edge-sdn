@@ -9,11 +9,12 @@ Demonstrates:
 3. Recovery when the primary bearer returns.
 """
 
-import subprocess
-import time
 import json
+import subprocess
 import sys
+import time
 from datetime import datetime
+
 
 def run_cmd(cmd, check=True):
     if isinstance(cmd, str):
@@ -24,15 +25,20 @@ def run_cmd(cmd, check=True):
         raise RuntimeError(f"Command failed: {cmd}\nStderr: {res.stderr}\nStdout: {res.stdout}")
     return res
 
+
 def probe_enclave_to_shore():
     """Probe Shore Gateway from Enclave Client and measure latency/status."""
     probe_cmd = [
-        "ssh", "-A",
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "UserKnownHostsFile=/dev/null",
-        "-o", "ProxyCommand=ssh -o StrictHostKeyChecking=no -W %h:%p sandbox-hypervisor-node",
+        "ssh",
+        "-A",
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "UserKnownHostsFile=/dev/null",
+        "-o",
+        "ProxyCommand=ssh -o StrictHostKeyChecking=no -W %h:%p sandbox-hypervisor-node",
         "bjarrett@10.200.1.2",
-        "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null bjarrett@10.10.1.10 'curl -s -m 2 http://10.100.1.1:8080'"
+        "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null bjarrett@10.10.1.10 'curl -s -m 2 http://10.100.1.1:8080'",
     ]
     t0 = time.time()
     res = run_cmd(probe_cmd, check=False)
@@ -40,6 +46,7 @@ def probe_enclave_to_shore():
     if res.returncode == 0 and "OPERATIONAL" in res.stdout:
         return True, elapsed_ms, res.stdout.strip()
     return False, elapsed_ms, res.stderr.strip() or res.stdout.strip()
+
 
 def test_legacy_baseline():
     print("=" * 70)
@@ -73,7 +80,9 @@ def test_legacy_baseline():
     print(" -> Route table retains 10.100.1.1 (Metric 10) as primary default gateway.")
     time.sleep(2)
     success, latency, output = probe_enclave_to_shore()
-    print(f" -> Probe Result during severance: {'SUCCESS' if success else 'BLACKHOLED/DROPPED'} (Latency: {latency:.2f}ms)")
+    print(
+        f" -> Probe Result during severance: {'SUCCESS' if success else 'BLACKHOLED/DROPPED'} (Latency: {latency:.2f}ms)"
+    )
     if success:
         raise AssertionError("Expected packet drop/blackholing during P-LEO outage, but probe succeeded!")
     print(" -> [VERIFIED] Traffic is stalled/blackholed due to lack of dynamic path switching.")
@@ -98,6 +107,7 @@ def test_legacy_baseline():
     print(" [✓] Legacy static router and simulated shore gateway operational")
     print(" [✓] Legacy static routing failure mode successfully characterized")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     test_legacy_baseline()

@@ -19,13 +19,13 @@ Generates:
 - docs/benchmarks/failover-resilience-report.md
 """
 
+import json
 import os
+import subprocess
 import sys
 import time
-import json
-import subprocess
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Tuple
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, List, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 REPORT_MD_PATH = os.path.join(PROJECT_ROOT, "docs", "benchmarks", "failover-resilience-report.md")
@@ -33,11 +33,15 @@ REPORT_JSON_PATH = os.path.join(PROJECT_ROOT, "docs", "benchmarks", "benchmark_r
 
 # Router SSH connection target (uses ~/.ssh/config)
 SSH_ROUTER_CMD = [
-    "ssh", "-A",
-    "-o", "StrictHostKeyChecking=no",
-    "-o", "UserKnownHostsFile=/dev/null",
-    "ship-gateway"
+    "ssh",
+    "-A",
+    "-o",
+    "StrictHostKeyChecking=no",
+    "-o",
+    "UserKnownHostsFile=/dev/null",
+    "ship-gateway",
 ]
+
 
 @dataclass
 class ScenarioMetric:
@@ -55,6 +59,7 @@ class ScenarioMetric:
     recovery_time_ms: float
     status: str
 
+
 def run_cmd(cmd, check=True) -> subprocess.CompletedProcess:
     if isinstance(cmd, str):
         res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -64,6 +69,7 @@ def run_cmd(cmd, check=True) -> subprocess.CompletedProcess:
         raise RuntimeError(f"Command failed ({cmd}):\nStderr: {res.stderr}\nStdout: {res.stdout}")
     return res
 
+
 def exec_on_router(command: str) -> str:
     """Execute command on ship-gateway router."""
     if os.path.exists("/sys/class/net/eth-pleops"):
@@ -71,6 +77,7 @@ def exec_on_router(command: str) -> str:
         return res.stdout.strip()
     res = run_cmd(SSH_ROUTER_CMD + [command], check=False)
     return res.stdout.strip()
+
 
 def get_active_primary_route() -> Tuple[str, int]:
     """Inspect current lowest-metric default route on ship-gateway."""
@@ -90,28 +97,32 @@ def get_active_primary_route() -> Tuple[str, int]:
                 continue
     return primary_dev, lowest_metric
 
+
 def probe_shore_c2(target_ip: str = "10.100.2.1", timeout_sec: float = 2.0) -> Tuple[bool, float]:
     """Test C2 reachability from enclave or router to shore endpoint."""
     t0 = time.time()
     out = exec_on_router(f"curl -s -m {timeout_sec} http://{target_ip}:8080")
     elapsed_ms = (time.time() - t0) * 1000.0
-    success = ("OPERATIONAL" in out or "SHORE-GATEWAY" in out)
+    success = "OPERATIONAL" in out or "SHORE-GATEWAY" in out
     return success, elapsed_ms
 
-def batch_continuous_probe(count: int = 15, target_ip: str = "10.100.2.1", timeout: float = 1.0) -> Tuple[int, int, float, float]:
+
+def batch_continuous_probe(
+    count: int = 15, target_ip: str = "10.100.2.1", timeout: float = 1.0
+) -> Tuple[int, int, float, float]:
     """Run batch probe to measure continuous traffic survival."""
     cmd = (
         f"python3 -c 'import urllib.request, time, json; "
         f"results = []; "
         f"for _ in range({count}): "
         f"    try: "
-        f"        results.append(urllib.request.urlopen(\"http://{target_ip}:8080\", timeout={timeout}).getcode() == 200); "
+        f'        results.append(urllib.request.urlopen("http://{target_ip}:8080", timeout={timeout}).getcode() == 200); '
         f"    except Exception: "
         f"        results.append(False); "
         f"    time.sleep(0.06); "
         f"ok = sum(results); "
         f"pct = round(ok / len(results) * 100.0, 1) if results else 0.0; "
-        f"print(json.dumps({{\"sent\": len(results), \"ok\": ok, \"pct\": pct, \"avg_rtt\": 48.0}}))'"
+        f'print(json.dumps({{"sent": len(results), "ok": ok, "pct": pct, "avg_rtt": 48.0}}))\''
     )
     raw = exec_on_router(cmd)
     try:
@@ -119,17 +130,23 @@ def batch_continuous_probe(count: int = 15, target_ip: str = "10.100.2.1", timeo
             line = line.strip()
             if line.startswith("{") and line.endswith("}"):
                 data = json.loads(line)
-                return data["sent"], data["ok"], round(data["pct"], 1), round(data.get("avg_rtt", 48.0), 1)
+                return (
+                    data["sent"],
+                    data["ok"],
+                    round(data["pct"], 1),
+                    round(data.get("avg_rtt", 48.0), 1),
+                )
     except Exception:
         pass
     return count, count, 100.0, 48.0
+
 
 def run_resiliency_benchmark() -> Dict[str, Any]:
     print("=" * 80)
     print("TACTICAL EDGE SDN: QUANTITATIVE DDIL RESILIENCY BENCHMARK RUNNER")
     print("=" * 80)
     print(f"Timestamp: {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}")
-    
+
     scenarios: List[ScenarioMetric] = []
 
     # Step 0: Ensure baseline clean slate
@@ -184,7 +201,9 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
     # Continuous stream test during active fade
     sent, ok, survival_pct, avg_rtt = batch_continuous_probe(count=15, target_ip="10.100.2.1")
     c2_ok, c2_lat = probe_shore_c2(target_ip="10.100.2.1")
-    print(f" -> C2 Delivery via {promoted_if}: {'PASS' if c2_ok else 'FAIL'} ({c2_lat:.1f}ms) | Packet Survival: {survival_pct}%")
+    print(
+        f" -> C2 Delivery via {promoted_if}: {'PASS' if c2_ok else 'FAIL'} ({c2_lat:.1f}ms) | Packet Survival: {survival_pct}%"
+    )
 
     # Restoration
     print(" -> Step 1.2: Restoring P-LEO link and measuring re-convergence...")
@@ -197,21 +216,23 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
     print(f" -> Re-convergence to: {rec_dev} in {rec_time_ms:.1f} ms")
 
     s1_status = "PASSED" if (promoted_if in ("eth-milsat", "eth-losrf") and c2_ok) else "FAILED"
-    scenarios.append(ScenarioMetric(
-        scenario_name="Satellite Rain Fade (Progressive Degradation)",
-        target_bearer="pleops (P-LEO)",
-        injected_impairment="300ms delay + 15% loss",
-        detection_time_ms=round(detection_ms, 1),
-        cutover_time_ms=round(cutover_ms, 1),
-        total_failover_ms=round(total_ms, 1),
-        probes_sent=sent,
-        probes_successful=ok,
-        packet_survival_pct=survival_pct,
-        promoted_route=promoted_if or "eth-milsat",
-        alternate_c2_latency_ms=round(c2_lat, 1),
-        recovery_time_ms=round(rec_time_ms, 1),
-        status=s1_status
-    ))
+    scenarios.append(
+        ScenarioMetric(
+            scenario_name="Satellite Rain Fade (Progressive Degradation)",
+            target_bearer="pleops (P-LEO)",
+            injected_impairment="300ms delay + 15% loss",
+            detection_time_ms=round(detection_ms, 1),
+            cutover_time_ms=round(cutover_ms, 1),
+            total_failover_ms=round(total_ms, 1),
+            probes_sent=sent,
+            probes_successful=ok,
+            packet_survival_pct=survival_pct,
+            promoted_route=promoted_if or "eth-milsat",
+            alternate_c2_latency_ms=round(c2_lat, 1),
+            recovery_time_ms=round(rec_time_ms, 1),
+            status=s1_status,
+        )
+    )
 
     # -------------------------------------------------------------------------
     # SCENARIO 2: Electronic Warfare (EW) / RF Jamming Blackout
@@ -254,7 +275,9 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
 
     sent, ok, survival_pct, avg_rtt = batch_continuous_probe(count=15, target_ip="10.100.2.1")
     c2_ok, c2_lat = probe_shore_c2(target_ip="10.100.2.1")
-    print(f" -> C2 Delivery under EW Jamming: {'PASS' if c2_ok else 'FAIL'} ({c2_lat:.1f}ms) | Packet Survival: {survival_pct}%")
+    print(
+        f" -> C2 Delivery under EW Jamming: {'PASS' if c2_ok else 'FAIL'} ({c2_lat:.1f}ms) | Packet Survival: {survival_pct}%"
+    )
 
     print(" -> Step 2.2: Ceasing EW Jamming and restoring baseline...")
     t_rec = time.time()
@@ -266,21 +289,23 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
     print(f" -> Post-Jamming Re-convergence: {rec_dev} in {rec_time_ms:.1f} ms")
 
     s2_status = "PASSED" if (promoted_if in ("eth-milsat", "eth-losrf") and c2_ok) else "FAILED"
-    scenarios.append(ScenarioMetric(
-        scenario_name="RF Electronic Jamming Blackout",
-        target_bearer="pleops (P-LEO)",
-        injected_impairment="100% instantaneous packet severance",
-        detection_time_ms=round(detection_ms, 1),
-        cutover_time_ms=round(cutover_ms, 1),
-        total_failover_ms=round(total_ms, 1),
-        probes_sent=sent,
-        probes_successful=ok,
-        packet_survival_pct=survival_pct,
-        promoted_route=promoted_if or "eth-milsat",
-        alternate_c2_latency_ms=round(c2_lat, 1),
-        recovery_time_ms=round(rec_time_ms, 1),
-        status=s2_status
-    ))
+    scenarios.append(
+        ScenarioMetric(
+            scenario_name="RF Electronic Jamming Blackout",
+            target_bearer="pleops (P-LEO)",
+            injected_impairment="100% instantaneous packet severance",
+            detection_time_ms=round(detection_ms, 1),
+            cutover_time_ms=round(cutover_ms, 1),
+            total_failover_ms=round(total_ms, 1),
+            probes_sent=sent,
+            probes_successful=ok,
+            packet_survival_pct=survival_pct,
+            promoted_route=promoted_if or "eth-milsat",
+            alternate_c2_latency_ms=round(c2_lat, 1),
+            recovery_time_ms=round(rec_time_ms, 1),
+            status=s2_status,
+        )
+    )
 
     # -------------------------------------------------------------------------
     # SCENARIO 3: Intermittent Link Flapping & Route Damping
@@ -307,21 +332,23 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
 
     sent, ok, survival_pct, _ = batch_continuous_probe(count=15, target_ip="10.100.1.1")
     s3_status = "PASSED" if (c2_ok and stable_dev != "UNKNOWN") else "FAILED"
-    scenarios.append(ScenarioMetric(
-        scenario_name="Intermittent Link Flapping & Damping",
-        target_bearer="pleops (P-LEO)",
-        injected_impairment="Rapid on/off cycling (2s intervals)",
-        detection_time_ms=4000.0,
-        cutover_time_ms=1150.0,
-        total_failover_ms=5150.0,
-        probes_sent=sent,
-        probes_successful=ok,
-        packet_survival_pct=survival_pct,
-        promoted_route=stable_dev,
-        alternate_c2_latency_ms=round(c2_lat, 1),
-        recovery_time_ms=3800.0,
-        status=s3_status
-    ))
+    scenarios.append(
+        ScenarioMetric(
+            scenario_name="Intermittent Link Flapping & Damping",
+            target_bearer="pleops (P-LEO)",
+            injected_impairment="Rapid on/off cycling (2s intervals)",
+            detection_time_ms=4000.0,
+            cutover_time_ms=1150.0,
+            total_failover_ms=5150.0,
+            probes_sent=sent,
+            probes_successful=ok,
+            packet_survival_pct=survival_pct,
+            promoted_route=stable_dev,
+            alternate_c2_latency_ms=round(c2_lat, 1),
+            recovery_time_ms=3800.0,
+            status=s3_status,
+        )
+    )
 
     # Step 4: Final restore
     run_cmd("bash ./tests/chaos/impair-bearer.sh restore-all")
@@ -341,7 +368,7 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
         "avg_detection_latency_ms": round(avg_detection, 1),
         "avg_cutover_latency_ms": round(avg_cutover, 1),
         "avg_packet_survival_pct": round(avg_survival, 1),
-        "scenarios": [asdict(s) for s in scenarios]
+        "scenarios": [asdict(s) for s in scenarios],
     }
 
     # Save JSON artifact
@@ -361,12 +388,15 @@ def run_resiliency_benchmark() -> Dict[str, Any]:
     print(f"{'Scenario':<40} | {'Detection':<10} | {'Cutover':<10} | {'Survival':<10} | {'Status':<6}")
     print("-" * 80)
     for s in scenarios:
-        print(f"{s.scenario_name:<40} | {s.detection_time_ms:>7.1f}ms | {s.cutover_time_ms:>7.1f}ms | {s.packet_survival_pct:>8.1f}% | {s.status:<6}")
+        print(
+            f"{s.scenario_name:<40} | {s.detection_time_ms:>7.1f}ms | {s.cutover_time_ms:>7.1f}ms | {s.packet_survival_pct:>8.1f}% | {s.status:<6}"
+        )
     print("=" * 80)
     print(f"OVERALL BENCHMARK VERDICT: {'ALL CRITERIA SATISFIED (PASSED)' if all_passed else 'FAILED'}")
     print("=" * 80)
 
     return summary_data
+
 
 def generate_markdown_report(data: Dict[str, Any]):
     md = f"""# Tactical Edge SD-WAN: DDIL Chaos Resiliency Benchmark Report
@@ -430,6 +460,7 @@ Under tactical Denied, Degraded, Intermittent, and Limited (DDIL) conditions, mi
     os.makedirs(os.path.dirname(REPORT_MD_PATH), exist_ok=True)
     with open(REPORT_MD_PATH, "w") as f:
         f.write(md)
+
 
 if __name__ == "__main__":
     benchmark_data = run_resiliency_benchmark()

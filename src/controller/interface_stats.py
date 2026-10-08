@@ -5,11 +5,12 @@ Scrapes /proc/net/dev and /sys/class/net to calculate rolling throughput (Kbps),
 packet rates (pps), and dropped packet counts per bearer interface.
 """
 
-import time
 import os
 import re
-from dataclasses import dataclass, asdict
+import time
+from dataclasses import asdict, dataclass
 from typing import Dict, Optional, Tuple
+
 
 @dataclass
 class InterfaceMetric:
@@ -29,11 +30,18 @@ class InterfaceMetric:
     tx_pps: float = 0.0
     timestamp: float = 0.0
 
+
 class InterfaceStatsCollector:
     """Scrapes /proc/net/dev directly on the host or router."""
 
     def __init__(self, interfaces: Optional[list] = None):
-        self.interfaces = interfaces or ["eth-pleops", "eth-milsat", "eth-losrf", "eth-unclass", "eth-mgmt"]
+        self.interfaces = interfaces or [
+            "eth-pleops",
+            "eth-milsat",
+            "eth-losrf",
+            "eth-unclass",
+            "eth-mgmt",
+        ]
         self.prev_stats: Dict[str, Tuple[int, int, int, int, int, int, float]] = {}
         self.current_metrics: Dict[str, InterfaceMetric] = {}
 
@@ -76,7 +84,7 @@ class InterfaceStatsCollector:
         """Update interface metrics and compute rolling rates."""
         now = time.time()
         raw_stats = self.parse_proc_net_dev(raw_proc_content)
-        
+
         for iface in self.interfaces:
             stats = raw_stats.get(iface)
             if not stats:
@@ -99,7 +107,7 @@ class InterfaceStatsCollector:
             if iface in self.prev_stats:
                 p_rxb, p_txb, p_rxp, p_txp, p_rxd, p_txd, p_time = self.prev_stats[iface]
                 elapsed = max(0.001, now - p_time)
-                
+
                 # Compute deltas
                 rx_bytes_delta = max(0, rx_bytes - p_rxb)
                 tx_bytes_delta = max(0, tx_bytes - p_txb)
@@ -111,8 +119,16 @@ class InterfaceStatsCollector:
                 rx_pps = rx_pkts_delta / elapsed
                 tx_pps = tx_pkts_delta / elapsed
 
-            self.prev_stats[iface] = (rx_bytes, tx_bytes, rx_pkts, tx_pkts, rx_drop, tx_drop, now)
-            
+            self.prev_stats[iface] = (
+                rx_bytes,
+                tx_bytes,
+                rx_pkts,
+                tx_pkts,
+                rx_drop,
+                tx_drop,
+                now,
+            )
+
             metric = InterfaceMetric(
                 interface=iface,
                 rx_bytes=rx_bytes,
@@ -128,11 +144,12 @@ class InterfaceStatsCollector:
                 throughput_kbps=round(rx_kbps + tx_kbps, 2),
                 rx_pps=round(rx_pps, 1),
                 tx_pps=round(tx_pps, 1),
-                timestamp=now
+                timestamp=now,
             )
             self.current_metrics[iface] = metric
 
         return self.current_metrics
+
 
 if __name__ == "__main__":
     collector = InterfaceStatsCollector()
@@ -141,7 +158,9 @@ if __name__ == "__main__":
         while True:
             metrics = collector.update()
             for iface, m in metrics.items():
-                print(f"[{iface:12s}] RX: {m.rx_kbps:7.2f} Kbps ({m.rx_pps:5.1f} pps) | TX: {m.tx_kbps:7.2f} Kbps ({m.tx_pps:5.1f} pps) | Drops: RX={m.rx_drop} TX={m.tx_drop}")
+                print(
+                    f"[{iface:12s}] RX: {m.rx_kbps:7.2f} Kbps ({m.rx_pps:5.1f} pps) | TX: {m.tx_kbps:7.2f} Kbps ({m.tx_pps:5.1f} pps) | Drops: RX={m.rx_drop} TX={m.tx_drop}"
+                )
             time.sleep(1.0)
     except KeyboardInterrupt:
         pass
