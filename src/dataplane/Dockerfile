@@ -9,8 +9,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install FRRouting, WireGuard, iptables, iproute2, and Python
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install and upgrade system packages, FRRouting, WireGuard, iptables, iproute2, and Python
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
     curl \

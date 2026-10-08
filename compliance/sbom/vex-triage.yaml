@@ -1,0 +1,103 @@
+# ==============================================================================
+# OpenVEX Vulnerability Exploitability eXchange (VEX) Statement
+# Tactical Edge SDN Dataplane & Controller Container (CNF)
+# Reference: compliance/vulnerability-management.md & NIST SP 800-218 SSDF
+# ==============================================================================
+---
+"@context": "https://openvex.dev/ns/v0.2.0"
+"@id": "https://github.com/celttechie/tactical-edge-sdn/compliance/sbom/vex-triage.yaml"
+author: "Tactical Edge SDN Security Engineering <security@defenseunicorns.com>"
+role: "Project Maintainer"
+timestamp: "2026-10-08T13:20:00Z"
+version: 1
+tooling: "Trivy / Syft CI Supply Chain Gate"
+
+statements:
+  - vulnerability:
+      name: "CVE-2023-45853"
+      description: "zlib: integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6"
+    products:
+      - "@id": "pkg:deb/debian/zlib1g@1:1.2.13.dfsg-1"
+      - "@id": "pkg:oci/tactical-sdn-stack:v0.3.0"
+    status: "not_affected"
+    justification: "vulnerable_code_cannot_be_controlled_by_adversary"
+    impact_statement: >-
+      CVE-2023-45853 resides exclusively in the third-party MiniZip contrib utility
+      distributed with zlib source. Tactical Edge SDN components (FRRouting, WireGuard,
+      and Netlink controller) dynamically link only core libz compression/decompression
+      primitives and never execute MiniZip archive extraction.
+    action_statement: >-
+      Marked not_affected. Debian security team classifies this issue as will_not_fix
+      in bookworm. Continuous monitoring maintained via CI Trivy scans.
+
+  - vulnerability:
+      name: "CVE-2026-53613"
+      description: "util-linux: TOCTOU in the mount program via ancestor directory swap"
+    products:
+      - "@id": "pkg:deb/debian/util-linux@2.38.1-5+deb12u3"
+      - "@id": "pkg:deb/debian/util-linux-extra@2.38.1-5+deb12u3"
+    status: "not_affected"
+    justification: "inline_mitigations_already_exist"
+    impact_statement: >-
+      Tactical Edge SDN pods run under hardened Kubernetes least-privilege securityContext:
+      privileged: false, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true,
+      and all capabilities dropped except bounded NET_ADMIN/NET_RAW. SUID execution and
+      mount directory swapping are neutralized by kernel namespace isolation.
+    action_statement: >-
+      Mitigated by container runtime security boundary. Will update util-linux upon
+      upstream Debian point release.
+
+  - vulnerability:
+      name: "CVE-2026-76642"
+      description: "util-linux: failed external mount helper still runs privileged X-mount post-hooks"
+    products:
+      - "@id": "pkg:deb/debian/util-linux@2.38.1-5+deb12u3"
+      - "@id": "pkg:deb/debian/util-linux-extra@2.38.1-5+deb12u3"
+    status: "not_affected"
+    justification: "inline_mitigations_already_exist"
+    impact_statement: >-
+      External mount helpers are neither installed nor executable in the unprivileged
+      CNF container filesystem. Container filesystem is mounted read-only.
+    action_statement: >-
+      Mitigated by container runtime security boundary.
+
+  - vulnerability:
+      name: "CVE-2026-78408"
+      description: "util-linux: nsenter --join-cgroup leaks root cgroup migration authority"
+    products:
+      - "@id": "pkg:deb/debian/util-linux@2.38.1-5+deb12u3"
+      - "@id": "pkg:deb/debian/util-linux-extra@2.38.1-5+deb12u3"
+    status: "not_affected"
+    justification: "inline_mitigations_already_exist"
+    impact_statement: >-
+      nsenter is never called within the container lifecycle. Pod spec specifies
+      hostPID: false, isolating the container PID namespace from host cgroups.
+    action_statement: >-
+      Mitigated by pod specification isolation.
+
+  - vulnerability:
+      name: "CVE-2026-78409"
+      description: "util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks"
+    products:
+      - "@id": "pkg:deb/debian/util-linux@2.38.1-5+deb12u3"
+      - "@id": "pkg:deb/debian/util-linux-extra@2.38.1-5+deb12u3"
+    status: "not_affected"
+    justification: "inline_mitigations_already_exist"
+    impact_statement: >-
+      Subdir detached-tree mount options are not used by the CNF container or K3s runtime.
+    action_statement: >-
+      Mitigated by container runtime configuration.
+
+  - vulnerability:
+      name: "CVE-2026-78410"
+      description: "util-linux: restricted bind mounts do not pin source allowing permission alteration"
+    products:
+      - "@id": "pkg:deb/debian/util-linux@2.38.1-5+deb12u3"
+      - "@id": "pkg:deb/debian/util-linux-extra@2.38.1-5+deb12u3"
+    status: "not_affected"
+    justification: "inline_mitigations_already_exist"
+    impact_statement: >-
+      The CNF root filesystem is mounted read-only and ephemeral volume mounts (/run, /tmp, /var/log)
+      are strictly isolated emptyDir volumes without user-controlled bind mounts.
+    action_statement: >-
+      Mitigated by Kubernetes volume constraints.
