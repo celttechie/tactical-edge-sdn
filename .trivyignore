@@ -1,0 +1,28 @@
+# ==============================================================================
+# Tactical Edge SD-WAN - Trivy Vulnerability Ignore / Triage List
+# Corresponds to formal OpenVEX triage determinations in compliance/sbom/vex-triage.yaml
+# ==============================================================================
+
+# CVE-2023-45853: zlib1g MiniZip contrib buffer overflow (will_not_fix in Debian 12)
+# Rationale: MiniZip is not invoked or reachable by FRRouting, WireGuard, or SDN daemons.
+CVE-2023-45853
+
+# CVE-2026-53613, CVE-2026-76642, CVE-2026-78408, CVE-2026-78409, CVE-2026-78410: util-linux mount/cgroup
+# Rationale: Neutralized by readOnlyRootFilesystem, hostPID: false, drop ALL capabilities, and no privilege escalation.
+CVE-2026-53613
+CVE-2026-76642
+CVE-2026-78408
+CVE-2026-78409
+CVE-2026-78410
+
+# Debian 12 (bookworm) upstream unfixable / deferred CVEs:
+# ncurses buffer overflow (no upstream fix yet, interactive terminal not exposed over network)
+CVE-2025-69720
+# openssl DTLS handshake retransmission info disclosure (tactical overlay uses WireGuard / ChaCha20-Poly1305, not DTLS)
+CVE-2026-84782
+# perl-Archive-Tar DoS (not invoked in CNF runtime)
+CVE-2026-9538
+# python3.11 tarfile extraction filter / XML Expat DoS (controller does not parse untrusted XML/tarfiles)
+CVE-2026-11940
+CVE-2026-7210
+
