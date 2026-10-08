@@ -55,6 +55,10 @@ flowchart LR
 - **Decision**: Emulate multi-bearer SATCOM and RF environments using isolated Linux bridges with `tc netem` latency profiles ([`tests/chaos/impair-bearer.sh`](file:///home/bjarrett/Projects/tactical-edge-sdn/tests/chaos/impair-bearer.sh)).
 - **Rationale**: Provides fully reproducible, deterministic testing of tactical physical phenomena (P-LEO 40ms, MILSATCOM GEO 600ms, LOS-RF 15ms) on any commodity Linux host or nested hypervisor without requiring hundreds of thousands of dollars in proprietary RF channel simulators.
 
+### 3.4 In-Tree Security Patch Overlays vs Upstream Vendor Release Cycles
+- **Decision**: Apply cryptographically verified in-tree security patches directly during container and Zarf packaging ([`compliance/patches/`](file:///home/bjarrett/Projects/tactical-edge-sdn/compliance/patches/), [`docs/architecture/upstream-archaeology-and-cve-remediation.md`](file:///home/bjarrett/Projects/tactical-edge-sdn/docs/architecture/upstream-archaeology-and-cve-remediation.md)) rather than waiting for external vendor release cycles.
+- **Rationale**: DoD program offices and upstream routing appliance vendors require 6–18 months to issue patch releases. In-tree overlays allow an FDE to eliminate critical vulnerabilities (such as FRR CVE-2023-38802) same-day with complete cryptographic checksum pinning and machine-readable OpenVEX audit trails.
+
 ---
 
 ## 4. Defense Unicorns FDE Responsibilities to Codebase Mapping
@@ -66,6 +70,7 @@ flowchart LR
 | **Dynamic Software-Defined Networking (SDN)** | [`src/controller/policy_engine.py`](file:///home/bjarrett/Projects/tactical-edge-sdn/src/controller/policy_engine.py)<br>[`src/controller/route_actuator.py`](file:///home/bjarrett/Projects/tactical-edge-sdn/src/controller/route_actuator.py) | `PolicyEngine.evaluate_bearer()`, `RouteActuator.update_default_route()`, `clear_conntrack()` |
 | **Tactical DDIL Telemetry & Observability** | [`src/controller/sla_prober.py`](file:///home/bjarrett/Projects/tactical-edge-sdn/src/controller/sla_prober.py)<br>[`src/dashboard/server.py`](file:///home/bjarrett/Projects/tactical-edge-sdn/src/dashboard/server.py) | Prometheus `/metrics` exposition (`sdn_bearer_latency_ms`, `sdn_bearer_packet_loss_pct`), ASCII HUD. |
 | **Supply Chain Security & Continuous Compliance** | [`compliance/lula/oscal-component.yaml`](file:///home/bjarrett/Projects/tactical-edge-sdn/compliance/lula/oscal-component.yaml)<br>[`compliance/sbom/`](file:///home/bjarrett/Projects/tactical-edge-sdn/compliance/sbom/) | Lula automated OSCAL validation (NIST SP 800-53 controls `SC-7`, `AC-3`, `SI-4`, `CM-6`), CycloneDX/SPDX SBOMs. |
+| **Baseline Archaeology & In-Tree CVE Remediation** | [`docs/architecture/upstream-archaeology-and-cve-remediation.md`](file:///home/bjarrett/Projects/tactical-edge-sdn/docs/architecture/upstream-archaeology-and-cve-remediation.md)<br>[`compliance/patches/`](file:///home/bjarrett/Projects/tactical-edge-sdn/compliance/patches/) | Syft legacy baseline archaeology, CVE-2023-38802 air-gap risk triage, and in-tree build patch overlay pattern. |
 | **Chaos Engineering & Quantitative Resiliency** | [`tests/chaos/run_resiliency_benchmark.py`](file:///home/bjarrett/Projects/tactical-edge-sdn/tests/chaos/run_resiliency_benchmark.py) | Rain fade injection, EW RF jamming blackouts, flapping hysteresis benchmarking. |
 | **End-to-End Autonomous Automation** | [`scripts/run-e2e-lifecycle.sh`](file:///home/bjarrett/Projects/tactical-edge-sdn/scripts/run-e2e-lifecycle.sh) | Self-verifying single-command lifecycle runner with zero manual polling. |
 
