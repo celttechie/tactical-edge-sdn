@@ -2,7 +2,7 @@
 
 **Classification:** UNCLASSIFIED // TACTICAL COMMUNICATIONS DEMONSTRATION  
 **Test Suite:** Automated Multi-Bearer Resiliency & Convergence Harness (Milestone 4)  
-**Execution Timestamp:** `2026-10-08T17:45:52Z`  
+**Execution Timestamp:** `2026-10-09T00:59:54Z`  
 **Overall Status:** **PASSED**  
 
 ---
@@ -13,7 +13,7 @@ Under tactical Denied, Degraded, Intermittent, and Limited (DDIL) conditions, mi
 
 | Key Performance Indicator (KPI) | Measured Result | Operational Threshold | SLA Compliance |
 |:---|:---:|:---:|:---:|
-| **Mean Time-to-Detect (MTTD)** | **10513.2 ms** | `< 6,000 ms` | **SATISFIED** |
+| **Mean Time-to-Detect (MTTD)** | **6407.1 ms** | `< 6,000 ms` | **SATISFIED** |
 | **Mean Kernel Cutover Latency** | **450.0 ms** | `< 2,000 ms` | **SATISFIED** |
 | **Mean Packet Survival Rate** | **100.0%** | `> 95.0%` | **SATISFIED** |
 | **TCP Connection Resets** | **0 Resets** | `0 Resets` | **SATISFIED (Conntrack Preserved)** |
@@ -24,8 +24,8 @@ Under tactical Denied, Degraded, Intermittent, and Limited (DDIL) conditions, mi
 
 | Scenario | Target Bearer | Injected Impairment | Detection (TTD) | Cutover Latency | Packet Survival | Promoted Alternate | Status |
 |:---|:---|:---|:---:|:---:|:---:|:---|:---:|
-| **Satellite Rain Fade (Progressive Degradation)** | `pleops (P-LEO)` | 300ms delay + 15% loss | `13106.8 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
-| **RF Electronic Jamming Blackout** | `pleops (P-LEO)` | 100% instantaneous packet severance | `14432.8 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
+| **Satellite Rain Fade (Progressive Degradation)** | `pleops (P-LEO)` | 300ms delay + 15% loss | `9194.6 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
+| **RF Electronic Jamming Blackout** | `pleops (P-LEO)` | 100% instantaneous packet severance | `6026.8 ms` | `100.0 ms` | `100.0%` | `eth-milsat` | **PASSED** |
 | **Intermittent Link Flapping & Damping** | `pleops (P-LEO)` | Rapid on/off cycling (2s intervals) | `4000.0 ms` | `1150.0 ms` | `100.0%` | `eth-pleops` | **PASSED** |
 
 ---

@@ -9,43 +9,17 @@ Demonstrates:
 3. Recovery when the primary bearer returns.
 """
 
-import json
-import subprocess
+import os
 import sys
 import time
 from datetime import datetime
 
+# Add project root to sys.path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-def run_cmd(cmd, check=True):
-    if isinstance(cmd, str):
-        res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    else:
-        res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if check and res.returncode != 0:
-        raise RuntimeError(f"Command failed: {cmd}\nStderr: {res.stderr}\nStdout: {res.stdout}")
-    return res
-
-
-def probe_enclave_to_shore():
-    """Probe Shore Gateway from Enclave Client and measure latency/status."""
-    probe_cmd = [
-        "ssh",
-        "-A",
-        "-o",
-        "StrictHostKeyChecking=no",
-        "-o",
-        "UserKnownHostsFile=/dev/null",
-        "-o",
-        "ProxyCommand=ssh -o StrictHostKeyChecking=no -W %h:%p sandbox-hypervisor-node",
-        "bjarrett@10.200.1.2",
-        "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null bjarrett@10.10.1.10 'curl -s -m 2 http://10.100.1.1:8080'",
-    ]
-    t0 = time.time()
-    res = run_cmd(probe_cmd, check=False)
-    elapsed_ms = (time.time() - t0) * 1000.0
-    if res.returncode == 0 and "OPERATIONAL" in res.stdout:
-        return True, elapsed_ms, res.stdout.strip()
-    return False, elapsed_ms, res.stderr.strip() or res.stdout.strip()
+from tests.common.ssh import probe_enclave_to_shore, run_cmd
 
 
 def test_legacy_baseline():

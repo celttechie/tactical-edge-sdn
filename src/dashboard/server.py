@@ -942,17 +942,16 @@ class DashboardDataManager:
 
         # If running on host, scrape router VM via SSH
         try:
+            router_target = os.getenv("SHIP_GATEWAY_HOST", "ship-gateway")
             ssh_cmd = [
                 "ssh",
                 "-o",
-                "StrictHostKeyChecking=no",
+                "BatchMode=yes",
                 "-o",
-                "UserKnownHostsFile=/dev/null",
+                "StrictHostKeyChecking=accept-new",
                 "-o",
-                "ConnectTimeout=1",
-                "-J",
-                "sandbox-hypervisor-node",
-                "bjarrett@10.200.1.2",
+                "ConnectTimeout=2",
+                router_target,
                 "cat /proc/net/dev",
             ]
             res = subprocess.run(
@@ -960,7 +959,7 @@ class DashboardDataManager:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=1.5,
+                timeout=2.0,
             )
             if res.returncode == 0:
                 metrics = self.interface_collector.update(res.stdout)
@@ -983,17 +982,16 @@ class DashboardDataManager:
                 )
                 out = res.stdout.strip()
             else:
+                router_target = os.getenv("SHIP_GATEWAY_HOST", "ship-gateway")
                 ssh_cmd = [
                     "ssh",
                     "-o",
-                    "StrictHostKeyChecking=no",
+                    "BatchMode=yes",
                     "-o",
-                    "UserKnownHostsFile=/dev/null",
+                    "StrictHostKeyChecking=accept-new",
                     "-o",
-                    "ConnectTimeout=1",
-                    "-J",
-                    "sandbox-hypervisor-node",
-                    "bjarrett@10.200.1.2",
+                    "ConnectTimeout=2",
+                    router_target,
                     "ip -j route show default 2>/dev/null || ip route show default",
                 ]
                 res = subprocess.run(
@@ -1001,7 +999,7 @@ class DashboardDataManager:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    timeout=1.5,
+                    timeout=2.0,
                 )
                 out = res.stdout.strip()
 

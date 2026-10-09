@@ -8,25 +8,27 @@
 # ==============================================================================
 set -euo pipefail
 
-SHIP_TARGET="${1:-ship-gateway}"
-ENCLAVE_CLIENT="enclave-client"
-SHORE_TARGET="10.200.1.10"
+SHIP_TARGET="${1:-${SHIP_TARGET:-ship-gateway}}"
+ENCLAVE_CLIENT="${ENCLAVE_CLIENT:-enclave-client}"
+SHORE_TARGET="${SHORE_TARGET:-10.200.1.10}"
+
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new)
 
 echo "======================================================================"
 echo "  Validating Modernized CNF Posture on ${SHIP_TARGET}                 "
 echo "======================================================================"
 
 echo -e "\n==> [1/4] Checking Tactical SDN Kubernetes Pods on ${SHIP_TARGET}..."
-ssh "${SHIP_TARGET}" "sudo k3s kubectl get pods -n tactical-sdn -o wide"
+ssh "${SSH_OPTS[@]}" "${SHIP_TARGET}" "sudo k3s kubectl get pods -n tactical-sdn -o wide"
 
 echo -e "\n==> [2/4] Checking Tactical SDN Telemetry Service..."
-ssh "${SHIP_TARGET}" "sudo k3s kubectl get svc -n tactical-sdn"
+ssh "${SSH_OPTS[@]}" "${SHIP_TARGET}" "sudo k3s kubectl get svc -n tactical-sdn"
 
 echo -e "\n==> [3/4] Querying Prometheus /metrics exposition from CNF container..."
-ssh "${SHIP_TARGET}" "curl -s http://127.0.0.1:8080/metrics | grep -E '^# HELP (sdn_|system_)' -A 1 | head -n 12 || true"
+ssh "${SSH_OPTS[@]}" "${SHIP_TARGET}" "curl -s http://127.0.0.1:8080/metrics | grep -E '^# HELP (sdn_|system_)' -A 1 | head -n 12 || true"
 
 echo -e "\n==> [4/4] Verifying End-to-End Enclave-to-Shore Data Flow..."
-if ssh -o BatchMode=yes -o ConnectTimeout=2 "${ENCLAVE_CLIENT}" "ping -c 3 ${SHORE_TARGET}" 2>/dev/null; then
+if ssh "${SSH_OPTS[@]}" "${ENCLAVE_CLIENT}" "ping -c 3 ${SHORE_TARGET}" 2>/dev/null; then
     echo " [✓] End-to-end enclave data flow verified."
 else
     echo " [i] Enclave direct SSH probe bypassed from current host. Verification completed on ${SHIP_TARGET}."

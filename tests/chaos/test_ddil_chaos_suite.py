@@ -18,19 +18,19 @@ import time
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
+# Add project root to sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-SSH_ROUTER_CMD = [
-    "ssh",
-    "-A",
-    "-o",
-    "StrictHostKeyChecking=no",
-    "-o",
-    "UserKnownHostsFile=/dev/null",
-    "-o",
-    "ProxyCommand=ssh -o StrictHostKeyChecking=no -W %h:%p sandbox-hypervisor-node",
-    "bjarrett@10.200.1.2",
-]
+from tests.common.ssh import (
+    exec_on_ship,
+    get_router_active_route,
+    probe_enclave_to_shore,
+    run_cmd,
+)
+
+exec_on_router = exec_on_ship
 
 
 @dataclass
@@ -46,50 +46,9 @@ class ChaosBenchmarkResult:
     status: str
 
 
-def run_cmd(cmd, check=True):
-    if isinstance(cmd, str):
-        res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    else:
-        res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if check and res.returncode != 0:
-        raise RuntimeError(f"Command failed: {cmd}\nStderr: {res.stderr}\nStdout: {res.stdout}")
-    return res
-
-
-def exec_on_router(command: str) -> str:
-    res = run_cmd(SSH_ROUTER_CMD + [command], check=False)
-    return res.stdout.strip()
-
-
 def get_router_active_primary() -> str:
-    out = exec_on_router("ip route show default")
-    lines = out.splitlines()
-    if not lines:
-        return "UNKNOWN"
-    lowest_metric = 99999
-    primary_if = "UNKNOWN"
-    for line in lines:
-        parts = line.split()
-        if "dev" in parts and "metric" in parts:
-            dev = parts[parts.index("dev") + 1]
-            metric = int(parts[parts.index("metric") + 1])
-            if metric < lowest_metric:
-                lowest_metric = metric
-                primary_if = dev
-    return f"{primary_if} (metric {lowest_metric})"
-
-
-def probe_enclave_to_shore(target_ip: str = "10.100.1.1") -> Tuple[bool, float, str]:
-    probe_cmd = SSH_ROUTER_CMD + [
-        f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null bjarrett@10.10.1.10 "
-        f"'curl -s -m 6 http://{target_ip}:8080'"
-    ]
-    t0 = time.time()
-    res = run_cmd(probe_cmd, check=False)
-    elapsed_ms = (time.time() - t0) * 1000.0
-    if res.returncode == 0 and "OPERATIONAL" in res.stdout:
-        return True, elapsed_ms, res.stdout.strip()
-    return False, elapsed_ms, res.stderr.strip() or res.stdout.strip()
+    dev, metric = get_router_active_route()
+    return f"{dev} (metric {metric})"
 
 
 def run_ddil_chaos_suite() -> List[ChaosBenchmarkResult]:

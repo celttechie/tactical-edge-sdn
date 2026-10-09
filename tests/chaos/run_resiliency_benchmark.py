@@ -31,16 +31,11 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 REPORT_MD_PATH = os.path.join(PROJECT_ROOT, "docs", "benchmarks", "failover-resilience-report.md")
 REPORT_JSON_PATH = os.path.join(PROJECT_ROOT, "docs", "benchmarks", "benchmark_results.json")
 
-# Router SSH connection target (uses ~/.ssh/config)
-SSH_ROUTER_CMD = [
-    "ssh",
-    "-A",
-    "-o",
-    "StrictHostKeyChecking=no",
-    "-o",
-    "UserKnownHostsFile=/dev/null",
-    "ship-gateway",
-]
+# Add project root to sys.path
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from tests.common.ssh import exec_on_ship, run_cmd
 
 
 @dataclass
@@ -60,23 +55,12 @@ class ScenarioMetric:
     status: str
 
 
-def run_cmd(cmd, check=True) -> subprocess.CompletedProcess:
-    if isinstance(cmd, str):
-        res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    else:
-        res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if check and res.returncode != 0:
-        raise RuntimeError(f"Command failed ({cmd}):\nStderr: {res.stderr}\nStdout: {res.stdout}")
-    return res
-
-
 def exec_on_router(command: str) -> str:
     """Execute command on ship-gateway router."""
     if os.path.exists("/sys/class/net/eth-pleops"):
         res = run_cmd(command, check=False)
         return res.stdout.strip()
-    res = run_cmd(SSH_ROUTER_CMD + [command], check=False)
-    return res.stdout.strip()
+    return exec_on_ship(command, check=False)
 
 
 def get_active_primary_route() -> Tuple[str, int]:

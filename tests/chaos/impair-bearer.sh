@@ -21,26 +21,28 @@ usage() {
     exit 1
 }
 
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new)
+
 run_on_hypervisor() {
     local cmd="$1"
-    ssh "$HYPERVISOR_HOST" "sudo bash -c $(printf %q "$cmd")"
+    ssh "${SSH_OPTS[@]}" "$HYPERVISOR_HOST" "sudo bash -c $(printf %q "$cmd")"
 }
 
 get_bridge_interface() {
     local net_name="$1"
-    ssh "$HYPERVISOR_HOST" "sudo virsh net-info $net_name 2>/dev/null | grep 'Bridge:' | awk '{print \$2}'"
+    ssh "${SSH_OPTS[@]}" "$HYPERVISOR_HOST" "sudo virsh net-info $net_name 2>/dev/null | grep 'Bridge:' | awk '{print \$2}'"
 }
 
 apply_netem_to_bridge_and_taps() {
     local br="$1"
     local netem_args="$2"
     
-    ssh "$HYPERVISOR_HOST" "sudo tc qdisc replace dev $br root netem $netem_args 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc replace dev \$tap root netem $netem_args 2>/dev/null || true; done"
+    ssh "${SSH_OPTS[@]}" "$HYPERVISOR_HOST" "sudo tc qdisc replace dev $br root netem $netem_args 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc replace dev \$tap root netem $netem_args 2>/dev/null || true; done"
 }
 
 clear_netem_on_bridge_and_taps() {
     local br="$1"
-    ssh "$HYPERVISOR_HOST" "sudo tc qdisc del dev $br root 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc del dev \$tap root 2>/dev/null || true; done"
+    ssh "${SSH_OPTS[@]}" "$HYPERVISOR_HOST" "sudo tc qdisc del dev $br root 2>/dev/null || true; for tap in \$(sudo ip -o link show master $br | cut -d: -f2 | tr -d ' '); do sudo tc qdisc del dev \$tap root 2>/dev/null || true; done"
 }
 
 case "${1:-}" in

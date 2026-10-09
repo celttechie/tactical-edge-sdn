@@ -22,7 +22,10 @@ start_tunnel() {
     fi
     echo "==> Starting Libvirt SSH tunnel to $REMOTE_HOST (127.0.0.1:$LOCAL_PORT -> $REMOTE_SOCK)..."
     rm -f "$CTRL_SOCK"
-    ssh -f -N -M -S "$CTRL_SOCK" -L "${LOCAL_PORT}:${REMOTE_SOCK}" "$REMOTE_HOST"
+    ssh -f -N -M -S "$CTRL_SOCK" \
+        -o ServerAliveInterval=15 \
+        -o ServerAliveCountMax=4 \
+        -L "${LOCAL_PORT}:${REMOTE_SOCK}" "$REMOTE_HOST"
     for i in {1..20}; do
         if is_running; then
             echo "==> Tunnel established successfully."

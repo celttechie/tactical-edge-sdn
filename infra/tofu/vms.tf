@@ -279,6 +279,15 @@ resource "libvirt_domain" "enclave_client" {
 # Ensures OpenTofu apply blocks and does not return until all guest VMs have
 # fully converged, completed cloud-init bootstrap, and are ready for testing.
 resource "terraform_data" "wait_for_convergence" {
+  triggers_replace = [
+    libvirt_domain.legacy_router.id,
+    libvirt_domain.shore_gateway.id,
+    libvirt_domain.enclave_client.id,
+    libvirt_cloudinit_disk.cloudinit_router.id,
+    libvirt_cloudinit_disk.cloudinit_shore.id,
+    libvirt_cloudinit_disk.cloudinit_enclave.id,
+  ]
+
   depends_on = [
     libvirt_domain.legacy_router,
     libvirt_domain.shore_gateway,
@@ -288,7 +297,10 @@ resource "terraform_data" "wait_for_convergence" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      "${path.module}/../../scripts/setup-ssh.sh" --non-interactive
+      "${path.module}/../../scripts/setup-ssh.sh" --non-interactive \
+        --user="${var.admin_username}" \
+        --key="${var.ssh_private_key_path}" \
+        --hypervisor="${var.hypervisor_ssh_host}"
       echo "==> [OpenTofu Barrier] Awaiting guest OS cloud-init completion across all nodes..."
       for host in ship-gateway shore-gateway enclave-client; do
         echo " -> Awaiting $host convergence..."
