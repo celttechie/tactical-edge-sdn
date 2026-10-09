@@ -69,9 +69,10 @@ def main():
     # Modify JS to disable SSE during snapshot and immediately render live state
     snapshot_js = js.replace("startSSE();", f"renderState({json.dumps(state)});\n// SSE disabled for snapshot\n")
 
-    # Inline CSS and JS into standalone HTML
-    standalone_html = html.replace('<link rel="stylesheet" href="style.css">', f'<style>{css}</style>')
-    standalone_html = standalone_html.replace('<script src="app.js"></script>', f'<script>{snapshot_js}</script>')
+    # Inline CSS and JS into standalone HTML (handling cache query params like ?v=5)
+    import re
+    standalone_html = re.sub(r'<link rel="stylesheet" href="style\.css[^"]*">', f'<style>{css}</style>', html)
+    standalone_html = re.sub(r'<script src="app\.js[^"]*"></script>', f'<script>{snapshot_js}</script>', standalone_html)
 
     tmp_html_path = "/tmp/tactical_hud_snapshot.html"
     with open(tmp_html_path, "w") as f:

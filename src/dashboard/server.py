@@ -124,6 +124,11 @@ class DashboardDataManager:
         self.cached_state: Optional[DashboardState] = None
         self.benchmark_cache: Optional[Dict[str, Any]] = None
         self.benchmark_running: bool = False
+        self._running: bool = False
+        self._telemetry_thread: Optional[threading.Thread] = None
+        self._modernization_thread: Optional[threading.Thread] = None
+        self._cached_enclave_stats: Optional[Dict[str, Any]] = None
+        self._cached_shore_stats: Optional[Dict[str, Any]] = None
 
     def _setup_logging_integration(self):
         """Bridge standard Python logging into the in-memory dashboard log buffer."""
@@ -373,10 +378,10 @@ class DashboardDataManager:
             "message": "Resiliency benchmark started in background.",
         }
 
-    def detect_modernization_state(self) -> ModernizationState:
-        """Inspect actual router node or state to reflect accurate Day 0 vs CNF status."""
+    def _poll_modernization_state(self):
+        """Background probe of router node or state to reflect accurate Day 0 vs CNF status."""
         if self.modernization_state.is_in_transition:
-            return self.modernization_state
+            return
 
         try:
             # Initial probe on startup
@@ -403,7 +408,7 @@ class DashboardDataManager:
                 zarf_active = False
                 if k3s_active:
                     cnf_check = subprocess.run(
-                        "k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null",
+                        "k3s kubectl get pods -n tactical-sdn --no-headers 2>/dev/null",
                         shell=True,
                         stdout=subprocess.PIPE,
                         text=True,
@@ -428,7 +433,7 @@ class DashboardDataManager:
                     "ship-gateway",
                     "echo K3S:$(systemctl is-active k3s.service 2>/dev/null || echo inactive); "
                     "echo LEGACY:$(systemctl is-active sdwan-controller.service 2>/dev/null || echo inactive); "
-                    "echo CNF:$(k3s kubectl get pods -n tactical-sdn -l app.kubernetes.io/name=tactical-sdn --no-headers 2>/dev/null | grep -c Running || echo 0); "
+                    "echo CNF:$(k3s kubectl get pods -n tactical-sdn --no-headers 2>/dev/null | grep -c Running || echo 0); "
                     "echo ZARF:$(k3s kubectl get pods -n zarf -l app=docker-registry --no-headers 2>/dev/null | grep -c Running || echo 0)",
                 ]
                 res = subprocess.run(
@@ -517,8 +522,10 @@ class DashboardDataManager:
                     "4": "PENDING",
                 }
         except Exception as e:
-            logger.debug(f"Modernization state detection error: {e}")
+            logger.debug(f"Modernization state background probe error: {e}")
 
+    def detect_modernization_state(self) -> ModernizationState:
+        """Return cached modernization state immediately without blocking."""
         return self.modernization_state
 
     def trigger_modernization_step(self, action: str) -> Dict[str, Any]:
@@ -739,6 +746,19 @@ class DashboardDataManager:
     def start(self):
         logger.info("Starting background SLA probers and telemetry collection...")
         self.telemetry.start()
+        self._running = True
+        try:
+            self._poll_modernization_state()
+        except Exception:
+            pass
+        try:
+            self._collect_telemetry_state()
+        except Exception:
+            pass
+        self._telemetry_thread = threading.Thread(target=self._telemetry_worker, daemon=True)
+        self._telemetry_thread.start()
+        self._modernization_thread = threading.Thread(target=self._modernization_worker, daemon=True)
+        self._modernization_thread.start()
         self.log_event("SYSTEM_START", "Tactical SD-WAN Dashboard & Telemetry Manager initialized.")
         self.add_log(
             source="SYSTEM",
@@ -752,7 +772,27 @@ class DashboardDataManager:
         )
 
     def stop(self):
+        self._running = False
         self.telemetry.stop()
+
+    def _telemetry_worker(self):
+        while self._running:
+            t0 = time.time()
+            try:
+                self._collect_telemetry_state()
+            except Exception as e:
+                logger.error(f"Error in telemetry background worker: {e}", exc_info=True)
+            elapsed = time.time() - t0
+            sleep_time = max(0.05, 0.5 - elapsed)
+            time.sleep(sleep_time)
+
+    def _modernization_worker(self):
+        while self._running:
+            try:
+                self._poll_modernization_state()
+            except Exception as e:
+                logger.debug(f"Error in modernization background worker: {e}")
+            time.sleep(5.0)
 
     def log_event(self, event_type: str, message: str, severity: str = "INFO"):
         event = {
@@ -803,11 +843,12 @@ class DashboardDataManager:
         cmds = []
         local_cmds = []
 
-        if action in ("clean_slate", "restore_all"):
+        if action in ("clean", "clean_slate", "restore_all"):
             local_cmds = [
                 "sudo tc qdisc del dev eth-pleops root 2>/dev/null || true",
                 "sudo tc qdisc del dev eth-milsat root 2>/dev/null || true",
                 "sudo tc qdisc del dev eth-losrf root 2>/dev/null || true",
+                "sudo ip route replace default via 10.100.1.1 dev eth-pleops metric 10 2>/dev/null || true",
             ]
             self.chaos_state = {
                 "pleops": "NORMAL",
@@ -873,11 +914,15 @@ class DashboardDataManager:
             event_msg = "CHAOS SIMULATION: Rapid link flapping cycle triggered on P-LEO."
             severity = "WARNING"
 
+        # Immediately record chaos event so telemetry and SSE reflect it without delay
+        self.log_event("CHAOS_INJECTION", event_msg, severity=severity)
+
+        ship_cmds = []
         if self.is_shore_gateway():
             for c in local_cmds:
                 cmds.append(c)
                 clean_c = c.replace("sudo ", "")
-                cmds.append(f"ssh -o StrictHostKeyChecking=no ship-gateway 'sudo {clean_c}'")
+                ship_cmds.append(f"sudo {clean_c}")
         elif self.is_local_router():
             cmds.extend(local_cmds)
         else:
@@ -905,6 +950,8 @@ class DashboardDataManager:
         res_code = 0
         res_out = []
         is_root = os.geteuid() == 0
+
+        # Execute local commands synchronously (immediate kernel qdisc updates)
         for c in cmds:
             try:
                 cmd_to_run = c
@@ -916,7 +963,7 @@ class DashboardDataManager:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    timeout=10,
+                    timeout=5,
                 )
                 res_code = max(res_code, proc.returncode)
                 res_out.append(proc.stdout)
@@ -926,7 +973,24 @@ class DashboardDataManager:
                 res_code = -1
                 res_out.append(str(e))
 
-        self.log_event("CHAOS_INJECTION", event_msg, severity=severity)
+        # If on Shore Gateway, dispatch combined ship-side mutation asynchronously to avoid blocking HTTP
+        if self.is_shore_gateway() and ship_cmds:
+            combined_ship = "; ".join(ship_cmds)
+
+            def _dispatch_remote(remote_cmd):
+                try:
+                    subprocess.run(
+                        f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 ship-gateway '{remote_cmd}'",
+                        shell=True,
+                        timeout=5,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                except Exception as ex:
+                    logger.warning(f"Async remote chaos execution error: {ex}")
+
+            threading.Thread(target=_dispatch_remote, args=(combined_ship,), daemon=True).start()
+
         return {
             "status": "OK" if res_code == 0 else "ERROR",
             "action": action,
@@ -1029,21 +1093,41 @@ class DashboardDataManager:
             pass
         return None
 
-    def get_current_state(self) -> DashboardState:
+    def _collect_telemetry_state(self):
         now = time.time()
         bearer_details = {}
         all_states = []
 
         # Out-of-band mode: query ship-gateway:8080/api/status if on shore-gateway
         if self.is_shore_gateway():
-            ship_status = self.query_http_json("http://10.200.1.2:8080/api/status", timeout=0.8)
+            ship_status = self.query_http_json("http://10.200.1.2:8080/api/status", timeout=1.0)
             if ship_status and "primary_bearer" in ship_status and "bearers" in ship_status:
                 actual_primary = ship_status["primary_bearer"]
                 ship_bearers = ship_status.get("bearers", {})
                 for name, cfg in self.config.bearers.items():
                     sb = ship_bearers.get(name, {})
+                    raw_tp = sb.get("throughput_kbps", 0.0)
+                    loss_pct = sb.get("packet_loss_pct", 0.0)
                     state_str = sb.get("state", "HEALTHY")
-                    readiness = "FMC" if state_str == "HEALTHY" else ("PMC" if state_str == "DEGRADED" else "NMC")
+
+                    chaos_val = self.chaos_state.get(name, "NORMAL")
+                    if "BLACKOUT" in chaos_val:
+                        loss_pct = max(loss_pct, 100.0)
+                        readiness = "NMC"
+                        state_str = "BLACKOUT"
+                        delivered_tp = 0.0
+                        dropped_tp = raw_tp
+                    elif "DEGRADED" in chaos_val or "RAIN_FADE" in chaos_val:
+                        loss_pct = max(loss_pct, 15.0)
+                        readiness = "PMC"
+                        state_str = "DEGRADED"
+                        delivered_tp = round(raw_tp * max(0.0, 1.0 - (loss_pct / 100.0)), 2)
+                        dropped_tp = round(raw_tp - delivered_tp, 2)
+                    else:
+                        readiness = "FMC" if state_str == "HEALTHY" else ("PMC" if state_str == "DEGRADED" else "NMC")
+                        delivered_tp = round(raw_tp * max(0.0, 1.0 - (loss_pct / 100.0)), 2)
+                        dropped_tp = round(raw_tp - delivered_tp, 2)
+
                     all_states.append(readiness)
 
                     bearer_details[name] = {
@@ -1054,10 +1138,12 @@ class DashboardDataManager:
                         "is_active_route": (name == actual_primary),
                         "latency_ms": sb.get("latency_ms", 0.0),
                         "jitter_ms": sb.get("jitter_ms", 0.0),
-                        "packet_loss_pct": sb.get("packet_loss_pct", 0.0),
+                        "packet_loss_pct": loss_pct,
                         "score": sb.get("score", 100.0),
                         "computed_metric": sb.get("computed_metric", cfg.base_metric),
-                        "throughput_kbps": sb.get("throughput_kbps", 0.0),
+                        "throughput_kbps": delivered_tp,
+                        "raw_throughput_kbps": raw_tp,
+                        "dropped_kbps": dropped_tp,
                         "rx_kbps": sb.get("rx_kbps", 0.0),
                         "tx_kbps": sb.get("tx_kbps", 0.0),
                         "rx_pps": sb.get("rx_pps", 0.0),
@@ -1073,20 +1159,31 @@ class DashboardDataManager:
                 else:
                     overall_readiness = "NMC"
 
-                enclave_stats = self.query_http_json("http://10.10.1.10:9001/status") or {
-                    "status": "STREAMING",
-                    "packets_per_sec": 40.0,
-                    "throughput_kbps": 180.0,
-                    "total_sent": int((now % 10000) * 40),
-                    "target_host": "10.200.1.10",
-                }
-                shore_stats = self.query_http_json("http://10.200.1.10:9001/status") or {
-                    "status": "INGESTING",
-                    "packets_per_sec": 39.8,
-                    "throughput_kbps": 179.5,
-                    "total_packets_received": int((now % 10000) * 39.8),
-                    "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
-                }
+                enclave_stats = (
+                    self.query_http_json("http://10.10.1.10:9001/status", timeout=0.1)
+                    or self._cached_enclave_stats
+                    or {
+                        "status": "STREAMING",
+                        "packets_per_sec": 40.0,
+                        "throughput_kbps": 180.0,
+                        "total_sent": int((now % 10000) * 40),
+                        "target_host": "10.200.1.10",
+                    }
+                )
+                self._cached_enclave_stats = enclave_stats
+
+                shore_stats = (
+                    self.query_http_json("http://10.200.1.10:9001/status", timeout=0.1)
+                    or self._cached_shore_stats
+                    or {
+                        "status": "INGESTING",
+                        "packets_per_sec": 39.8,
+                        "throughput_kbps": 179.5,
+                        "total_packets_received": int((now % 10000) * 39.8),
+                        "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
+                    }
+                )
+                self._cached_shore_stats = shore_stats
 
                 if self.cached_state and self.cached_state.primary_bearer != actual_primary:
                     self.log_event(
@@ -1099,7 +1196,7 @@ class DashboardDataManager:
                     recent_events = list(self.events)
 
                 benchmark_data = self.load_benchmark_data()
-                modern_state = self.detect_modernization_state()
+                modern_state = self.modernization_state
 
                 state = DashboardState(
                     overall_readiness=overall_readiness,
@@ -1113,8 +1210,38 @@ class DashboardDataManager:
                     modernization=asdict(modern_state),
                     last_updated=now,
                 )
-                self.cached_state = state
-                return state
+                with self.lock:
+                    self.cached_state = state
+                return
+            else:
+                # Out-of-band ship_status query temporarily unavailable or timed out
+                # If cached_state exists, reuse it and update chaos state and timestamps without blocking
+                with self.lock:
+                    prev_state = self.cached_state
+                if prev_state is not None:
+                    updated_bearers = dict(prev_state.bearers)
+                    for b_name in updated_bearers:
+                        c_state = self.chaos_state.get(b_name, "NORMAL")
+                        updated_bearers[b_name]["chaos_state"] = c_state
+                        if "BLACKOUT" in c_state:
+                            updated_bearers[b_name]["throughput_kbps"] = 0.0
+                            updated_bearers[b_name]["readiness"] = "NMC"
+                            updated_bearers[b_name]["packet_loss_pct"] = 100.0
+                    state = DashboardState(
+                        overall_readiness=prev_state.overall_readiness,
+                        primary_bearer=prev_state.primary_bearer,
+                        bearers=updated_bearers,
+                        enclave_traffic=prev_state.enclave_traffic,
+                        shore_traffic=prev_state.shore_traffic,
+                        chaos_state=self.chaos_state,
+                        recent_events=list(self.events),
+                        resilience_benchmark=self.load_benchmark_data(),
+                        modernization=asdict(self.modernization_state),
+                        last_updated=now,
+                    )
+                    with self.lock:
+                        self.cached_state = state
+                    return
 
         # Local mode or fallback when remote controller unreachable
         stats_map = self.telemetry.get_all_stats()
@@ -1150,7 +1277,22 @@ class DashboardDataManager:
 
             rx_kbps = k_stat.get("rx_kbps", 0.0)
             tx_kbps = k_stat.get("tx_kbps", 0.0)
-            throughput_kbps = k_stat.get("throughput_kbps", rx_kbps + tx_kbps)
+            raw_throughput = k_stat.get("throughput_kbps", rx_kbps + tx_kbps)
+
+            chaos_val = self.chaos_state.get(name, "NORMAL")
+            if "BLACKOUT" in chaos_val:
+                loss_pct = max(loss_pct, 100.0)
+                readiness = "NMC"
+                delivered_tp = 0.0
+                dropped_tp = raw_throughput
+            elif "DEGRADED" in chaos_val or "RAIN_FADE" in chaos_val:
+                loss_pct = max(loss_pct, 15.0)
+                readiness = "PMC"
+                delivered_tp = round(raw_throughput * max(0.0, 1.0 - (loss_pct / 100.0)), 2)
+                dropped_tp = round(raw_throughput - delivered_tp, 2)
+            else:
+                delivered_tp = round(raw_throughput * max(0.0, 1.0 - (loss_pct / 100.0)), 2)
+                dropped_tp = round(raw_throughput - delivered_tp, 2)
 
             is_active = name == actual_primary
 
@@ -1165,7 +1307,9 @@ class DashboardDataManager:
                 "packet_loss_pct": loss_pct,
                 "score": score,
                 "computed_metric": metric,
-                "throughput_kbps": throughput_kbps,
+                "throughput_kbps": delivered_tp,
+                "raw_throughput_kbps": raw_throughput,
+                "dropped_kbps": dropped_tp,
                 "rx_kbps": rx_kbps,
                 "tx_kbps": tx_kbps,
                 "rx_pps": k_stat.get("rx_pps", 0.0),
@@ -1183,21 +1327,31 @@ class DashboardDataManager:
             overall_readiness = "NMC"
 
         # 6. Query Enclave & Shore active traffic metrics
-        enclave_stats = self.query_http_json("http://10.10.1.10:9001/status") or {
-            "status": "STREAMING",
-            "packets_per_sec": 40.0,
-            "throughput_kbps": 180.0,
-            "total_sent": int((now % 10000) * 40),
-            "target_host": "10.200.1.10",
-        }
+        enclave_stats = (
+            self.query_http_json("http://10.10.1.10:9001/status", timeout=0.1)
+            or self._cached_enclave_stats
+            or {
+                "status": "STREAMING",
+                "packets_per_sec": 40.0,
+                "throughput_kbps": 180.0,
+                "total_sent": int((now % 10000) * 40),
+                "target_host": "10.200.1.10",
+            }
+        )
+        self._cached_enclave_stats = enclave_stats
 
-        shore_stats = self.query_http_json("http://10.200.1.10:9001/status") or {
-            "status": "INGESTING",
-            "packets_per_sec": 39.8,
-            "throughput_kbps": 179.5,
-            "total_packets_received": int((now % 10000) * 39.8),
-            "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
-        }
+        shore_stats = (
+            self.query_http_json("http://10.200.1.10:9001/status", timeout=0.1)
+            or self._cached_shore_stats
+            or {
+                "status": "INGESTING",
+                "packets_per_sec": 39.8,
+                "throughput_kbps": 179.5,
+                "total_packets_received": int((now % 10000) * 39.8),
+                "sequence_gaps": bearer_details.get(actual_primary, {}).get("total_dropped", 0),
+            }
+        )
+        self._cached_shore_stats = shore_stats
 
         # Check for route change events
         if self.cached_state and self.cached_state.primary_bearer != actual_primary:
@@ -1225,8 +1379,16 @@ class DashboardDataManager:
             modernization=asdict(modern_state),
             last_updated=now,
         )
-        self.cached_state = state
-        return state
+        with self.lock:
+            self.cached_state = state
+
+    def get_current_state(self) -> DashboardState:
+        with self.lock:
+            if self.cached_state is not None:
+                return self.cached_state
+        self._collect_telemetry_state()
+        with self.lock:
+            return self.cached_state
 
     def get_prometheus_metrics(self) -> str:
         """Render current telemetry state in standard Prometheus text exposition format."""
@@ -1520,11 +1682,13 @@ class TacticalDashboardHTTPHandler(SimpleHTTPRequestHandler):
 
             try:
                 while True:
+                    t0 = time.time()
                     state = self.data_manager.get_current_state()
                     payload = f"data: {json.dumps(asdict(state))}\n\n".encode("utf-8")
                     self.wfile.write(payload)
                     self.wfile.flush()
-                    time.sleep(0.5)
+                    elapsed = time.time() - t0
+                    time.sleep(max(0.05, 0.5 - elapsed))
             except (BrokenPipeError, ConnectionResetError, Exception):
                 pass
             return

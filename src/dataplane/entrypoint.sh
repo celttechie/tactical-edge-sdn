@@ -15,21 +15,30 @@ mkdir -p /run/frr /var/run/frr /var/log/frr /tmp
 chown -R frr:frr /run/frr /var/run/frr /var/log/frr 2>/dev/null || true
 chmod 755 /run/frr /var/run/frr 2>/dev/null || true
 
-# 3. Start FRR daemons if installed
-if command -v /usr/lib/frr/frrinit.sh >/dev/null 2>&1; then
-    echo "==> Initializing FRRouting daemons (zebra, bgpd, bfdd)..."
-    /usr/lib/frr/frrinit.sh start || true
-elif command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q frr; then
-    systemctl start frr || true
+# 3. Start FRR daemons only if explicitly enabled
+if [ "${ENABLE_FRR_BGP:-false}" = "true" ]; then
+    if command -v /usr/lib/frr/frrinit.sh >/dev/null 2>&1; then
+        echo "==> Initializing FRRouting daemons (zebra, bgpd, bfdd)..."
+        /usr/lib/frr/frrinit.sh start || true
+    elif command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q frr; then
+        systemctl start frr || true
+    fi
 fi
 
-# 4. Configure baseline NAT/MASQUERADE for shipboard enclaves
+# 4. Out-of-Band Management Plane isolation (ADR-0008)
+# Ensure management responses from 10.200.1.2 always route directly via eth-mgmt
+ip rule add from 10.200.1.2 table 200 priority 100 2>/dev/null || true
+ip route add 10.200.1.0/24 dev eth-mgmt table 200 2>/dev/null || true
+ip route add default via 10.200.1.10 dev eth-mgmt table 200 2>/dev/null || true
+
+# 5. Configure baseline NAT/MASQUERADE and Forwarding for shipboard enclaves
 echo "==> Configuring IPTables NAT across bearer interfaces..."
 iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth-pleops -j MASQUERADE 2>/dev/null || true
 iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth-milsat -j MASQUERADE 2>/dev/null || true
 iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth-losrf -j MASQUERADE 2>/dev/null || true
-iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
-iptables -A FORWARD -s 10.10.0.0/16 -j ACCEPT 2>/dev/null || true
+iptables -I FORWARD 1 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
+iptables -I FORWARD 2 -s 10.10.0.0/16 -j ACCEPT 2>/dev/null || true
+iptables -I FORWARD 3 -d 10.10.0.0/16 -j ACCEPT 2>/dev/null || true
 
 # 5. Launch the SD-WAN Policy Controller Daemon
 echo "==> Launching SD-WAN Policy Controller Daemon..."

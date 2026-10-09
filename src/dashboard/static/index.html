@@ -28,6 +28,10 @@
                 <span class="status-label">ACTIVE PRIMARY PATH:</span>
                 <span class="active-route-badge" id="header-primary-route">P-LEO SATCOM</span>
             </div>
+            <div class="header-posture-box" id="header-posture-box" onclick="openSidebar('upgrade')" title="Click to open Gateway Modernization controls (Hotkey: U)">
+                <span class="status-label">GATEWAY POSTURE:</span>
+                <span class="header-posture-badge" id="hud-header-posture-badge">DAY 2: CLOUD-NATIVE CNF</span>
+            </div>
         </div>
 
         <div class="header-right">
@@ -52,109 +56,10 @@
             </div>
         </div>
     </header>
+    <div class="hud-toast-container" id="hud-toast-container"></div>
 
     <!-- Main Container -->
     <main class="hud-container">
-        
-        <!-- SECTION 0: Modernization Lifecycle & Gateway Transformation Control -->
-        <section class="hud-panel modernization-panel" id="modernization-panel">
-            <div class="panel-header">
-                <h2><span class="icon">🚀</span> SHIPBOARD GATEWAY MODERNIZATION LIFECYCLE</h2>
-                <div class="modernization-header-right">
-                    <div class="modernization-stage-badge" id="hud-modern-stage-badge">
-                        STAGE 4: CLOUD-NATIVE CNF ACTIVE
-                    </div>
-                    <button class="btn-open-panel-inline" onclick="openSidebar('upgrade')" title="Open Upgrade Controls">
-                        🎛️ UPGRADE CONTROLS ❯
-                    </button>
-                </div>
-            </div>
-
-            <!-- Modernization Alert Feedback Banner -->
-            <div class="modernization-banner-area">
-                <div class="modern-alert-banner" id="modern-alert-banner">
-                    <div class="alert-content">
-                        <span class="alert-icon" id="modern-alert-icon">✓</span>
-                        <span class="alert-text" id="modern-alert-text">Modernized Cloud-Native CNF Active (K3s Dynamic SLA Steering)</span>
-                    </div>
-                    <span class="alert-progress" id="modern-alert-progress"></span>
-                </div>
-            </div>
-
-            <!-- Stepper Visualizer -->
-            <div class="modernization-stepper">
-                <!-- Step 1 -->
-                <div class="step-card" id="step-card-1">
-                    <div class="step-num">1</div>
-                    <div class="step-content">
-                        <div class="step-title">DAY 0 BASELINE</div>
-                        <div class="step-desc">Legacy VNF & Static Metric Routing</div>
-                        <div class="step-status-wrapper">
-                            <span class="step-status" id="step-1-status">ACTIVE (DAY 0)</span>
-                            <span class="step-completion-badge" id="step-1-badge" style="display:none;">✓ DAY 0</span>
-                        </div>
-                        <div class="step-progress-wrapper" id="step-1-progress" style="display:none;">
-                            <div class="step-progress-fill" id="step-1-progress-fill" style="width: 0%;"></div>
-                        </div>
-                        <div class="step-detail-text" id="step-1-detail">Static Metric Dataplane</div>
-                    </div>
-                </div>
-                <div class="step-connector" id="step-conn-1"></div>
-
-                <!-- Step 2 -->
-                <div class="step-card" id="step-card-2">
-                    <div class="step-num">2</div>
-                    <div class="step-content">
-                        <div class="step-title">K3s BOOTSTRAP</div>
-                        <div class="step-desc">Background Air-Gap Node Init (Zero-Downtime)</div>
-                        <div class="step-status-wrapper">
-                            <span class="step-status" id="step-2-status">PENDING</span>
-                            <span class="step-completion-badge" id="step-2-badge" style="display:none;">✓ SETUP COMPLETED</span>
-                        </div>
-                        <div class="step-progress-wrapper" id="step-2-progress" style="display:none;">
-                            <div class="step-progress-fill" id="step-2-progress-fill" style="width: 0%;"></div>
-                        </div>
-                        <div class="step-detail-text" id="step-2-detail">Cluster Online • Node Ready</div>
-                    </div>
-                </div>
-                <div class="step-connector" id="step-conn-2"></div>
-
-                <!-- Step 3 -->
-                <div class="step-card" id="step-card-3">
-                    <div class="step-num">3</div>
-                    <div class="step-content">
-                        <div class="step-title">ZARF STAGING</div>
-                        <div class="step-desc">In-Cluster Seed Registry & Offline Webhooks</div>
-                        <div class="step-status-wrapper">
-                            <span class="step-status" id="step-3-status">PENDING</span>
-                            <span class="step-completion-badge" id="step-3-badge" style="display:none;">✓ SETUP COMPLETED</span>
-                        </div>
-                        <div class="step-progress-wrapper" id="step-3-progress" style="display:none;">
-                            <div class="step-progress-fill" id="step-3-progress-fill" style="width: 0%;"></div>
-                        </div>
-                        <div class="step-detail-text" id="step-3-detail">Seed Registry Staged</div>
-                    </div>
-                </div>
-                <div class="step-connector" id="step-conn-3"></div>
-
-                <!-- Step 4 -->
-                <div class="step-card" id="step-card-4">
-                    <div class="step-num">4</div>
-                    <div class="step-content">
-                        <div class="step-title">HOT CUTOVER (CNF)</div>
-                        <div class="step-desc">Atomic DaemonSet Rollout & Dynamic SLA Steering</div>
-                        <div class="step-status-wrapper">
-                            <span class="step-status" id="step-4-status">PENDING</span>
-                            <span class="step-completion-badge" id="step-4-badge" style="display:none;">✓ CUTOVER COMPLETE</span>
-                        </div>
-                        <div class="step-progress-wrapper" id="step-4-progress" style="display:none;">
-                            <div class="step-progress-fill" id="step-4-progress-fill" style="width: 0%;"></div>
-                        </div>
-                        <div class="step-detail-text" id="step-4-detail">Sub-second SLA Steering</div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- SECTION 1: Dynamic Topology & Packet Flow Visualizer -->
         <section class="hud-panel topology-panel">
@@ -498,8 +403,21 @@
             <div class="sidebar-tab-panel active" id="panel-upgrade">
                 <div class="sidebar-panel-header">
                     <h4>SHIPBOARD GATEWAY MODERNIZATION</h4>
-                    <span class="panel-tag">AIR-GAPPED LIFECYCLE</span>
+                    <span class="panel-tag" id="hud-modern-stage-badge">STAGE 4: CNF ACTIVE</span>
                 </div>
+
+                <!-- Modernization Alert Feedback Banner -->
+                <div class="modernization-banner-area">
+                    <div class="modern-alert-banner completed" id="modern-alert-banner">
+                        <div class="alert-content">
+                            <span class="alert-icon" id="modern-alert-icon">✓</span>
+                            <span class="alert-text" id="modern-alert-text">Modernized Cloud-Native CNF Active (K3s Dynamic SLA Steering)</span>
+                        </div>
+                        <span class="alert-progress" id="modern-alert-progress">[ONLINE]</span>
+                    </div>
+                </div>
+
+                <!-- Current Gateway Posture Status Card -->
                 <div class="sidebar-card">
                     <div class="card-caption">CURRENT GATEWAY POSTURE</div>
                     <div class="card-status-row">
@@ -512,50 +430,143 @@
                     </div>
                 </div>
 
-                <!-- Modernization Action Controls -->
+                <!-- One-Shot Full Modernization Trigger (Hero CTA) -->
+                <div class="modern-hero-section">
+                    <button class="modern-btn btn-upgrade modern-btn-full" id="btn-step-full" onclick="triggerModernization('full_upgrade')">
+                        <span class="btn-icon">⚡</span>
+                        <div class="btn-stack-text">
+                            <div class="title">EXECUTE FULL MODERNIZATION</div>
+                            <div class="desc">Autonomous pipeline: K3s Init ➔ Zarf Seed ➔ Hot Cutover</div>
+                        </div>
+                        <span class="btn-arrow">❯</span>
+                    </button>
+                </div>
+
+                <!-- Interactive 4-Stage Lifecycle Cards -->
                 <div class="sidebar-controls-section">
                     <div class="controls-status-label">
-                        <span>OPERATOR MODERNIZATION ACTIONS:</span>
+                        <span>LIFECYCLE STAGES & INTERACTIVE TRIGGERS:</span>
                         <span class="transition-msg" id="modern-transition-msg"></span>
                         <span class="transition-completed-msg" id="modern-completed-msg"></span>
                     </div>
 
-                    <div class="sidebar-btn-stack">
-                        <button class="modern-btn btn-step" id="btn-step-reset" onclick="triggerModernization('reset_day0')">
-                            <span class="btn-icon">⏪</span>
-                            <div class="btn-stack-text">
-                                <div class="title">RESET TO DAY 0 (LEGACY)</div>
-                                <div class="desc">Restore legacy VNF & static routing</div>
+                    <div class="modern-stage-stack">
+                        <!-- Stage 1 Card: Day 0 Baseline -->
+                        <div class="sidebar-stage-card current" id="step-card-1">
+                            <div class="stage-card-header">
+                                <div class="step-num">1</div>
+                                <div class="stage-title-wrap">
+                                    <div class="step-title">DAY 0 BASELINE</div>
+                                    <div class="step-desc">Legacy Linux VNF & Static Metric Routing</div>
+                                </div>
+                                <span class="step-completion-badge" id="step-1-badge">✓ ACTIVE</span>
                             </div>
-                        </button>
-                        <button class="modern-btn btn-step" id="btn-step-k3s" onclick="triggerModernization('bootstrap_k3s')">
-                            <span class="btn-icon">1️⃣</span>
-                            <div class="btn-stack-text">
-                                <div class="title">STEP 1: BOOTSTRAP K3s</div>
-                                <div class="desc">Air-gapped node init (zero downtime)</div>
+                            <div class="stage-card-body">
+                                <div class="step-status-wrapper">
+                                    <span class="status-label">STATUS:</span>
+                                    <span class="step-status" id="step-1-status">ACTIVE (DAY 0)</span>
+                                </div>
+                                <div class="step-progress-wrapper" id="step-1-progress" style="display:none;">
+                                    <div class="step-progress-fill" id="step-1-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <div class="step-detail-text" id="step-1-detail">Static Metric Dataplane</div>
                             </div>
-                        </button>
-                        <button class="modern-btn btn-step" id="btn-step-zarf" onclick="triggerModernization('init_zarf')">
-                            <span class="btn-icon">2️⃣</span>
-                            <div class="btn-stack-text">
-                                <div class="title">STEP 2: INIT ZARF REGISTRY</div>
-                                <div class="desc">Stage offline registry & webhook agents</div>
+                            <div class="stage-card-actions">
+                                <button class="modern-btn btn-step btn-stage-action" id="btn-step-reset" onclick="triggerModernization('reset_day0')">
+                                    <span class="btn-icon">⏪</span> RESET TO DAY 0
+                                </button>
                             </div>
-                        </button>
-                        <button class="modern-btn btn-step" id="btn-step-cutover" onclick="triggerModernization('cutover_cnf')">
-                            <span class="btn-icon">3️⃣</span>
-                            <div class="btn-stack-text">
-                                <div class="title">STEP 3: ATOMIC HOT CUTOVER</div>
-                                <div class="desc">Deploy CNF & retire legacy VNF (0ms loss)</div>
+                        </div>
+
+                        <!-- Connector 1 -> 2 -->
+                        <div class="sidebar-stage-connector" id="step-conn-1"></div>
+
+                        <!-- Stage 2 Card: Bootstrap K3s -->
+                        <div class="sidebar-stage-card" id="step-card-2">
+                            <div class="stage-card-header">
+                                <div class="step-num">2</div>
+                                <div class="stage-title-wrap">
+                                    <div class="step-title">K3s BOOTSTRAP</div>
+                                    <div class="step-desc">Background Air-Gap Node Init (Zero-Downtime)</div>
+                                </div>
+                                <span class="step-completion-badge" id="step-2-badge" style="display:none;">✓ READY</span>
                             </div>
-                        </button>
-                        <button class="modern-btn btn-upgrade" id="btn-step-full" onclick="triggerModernization('full_upgrade')">
-                            <span class="btn-icon">⚡</span>
-                            <div class="btn-stack-text">
-                                <div class="title">FULL AUTONOMOUS UPGRADE</div>
-                                <div class="desc">Execute end-to-end modernization sequence</div>
+                            <div class="stage-card-body">
+                                <div class="step-status-wrapper">
+                                    <span class="status-label">STATUS:</span>
+                                    <span class="step-status" id="step-2-status">PENDING</span>
+                                </div>
+                                <div class="step-progress-wrapper" id="step-2-progress" style="display:none;">
+                                    <div class="step-progress-fill" id="step-2-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <div class="step-detail-text" id="step-2-detail">Cluster Online • Node Ready</div>
                             </div>
-                        </button>
+                            <div class="stage-card-actions">
+                                <button class="modern-btn btn-step btn-stage-action" id="btn-step-k3s" onclick="triggerModernization('bootstrap_k3s')">
+                                    <span class="btn-icon">1️⃣</span> BOOTSTRAP K3s
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Connector 2 -> 3 -->
+                        <div class="sidebar-stage-connector" id="step-conn-2"></div>
+
+                        <!-- Stage 3 Card: Zarf Registry Staging -->
+                        <div class="sidebar-stage-card" id="step-card-3">
+                            <div class="stage-card-header">
+                                <div class="step-num">3</div>
+                                <div class="stage-title-wrap">
+                                    <div class="step-title">ZARF STAGING</div>
+                                    <div class="step-desc">In-Cluster Seed Registry & Offline Webhooks</div>
+                                </div>
+                                <span class="step-completion-badge" id="step-3-badge" style="display:none;">✓ STAGED</span>
+                            </div>
+                            <div class="stage-card-body">
+                                <div class="step-status-wrapper">
+                                    <span class="status-label">STATUS:</span>
+                                    <span class="step-status" id="step-3-status">PENDING</span>
+                                </div>
+                                <div class="step-progress-wrapper" id="step-3-progress" style="display:none;">
+                                    <div class="step-progress-fill" id="step-3-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <div class="step-detail-text" id="step-3-detail">Seed Registry Staged</div>
+                            </div>
+                            <div class="stage-card-actions">
+                                <button class="modern-btn btn-step btn-stage-action" id="btn-step-zarf" onclick="triggerModernization('init_zarf')">
+                                    <span class="btn-icon">2️⃣</span> INIT ZARF REGISTRY
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Connector 3 -> 4 -->
+                        <div class="sidebar-stage-connector" id="step-conn-3"></div>
+
+                        <!-- Stage 4 Card: Atomic Hot Cutover -->
+                        <div class="sidebar-stage-card" id="step-card-4">
+                            <div class="stage-card-header">
+                                <div class="step-num">4</div>
+                                <div class="stage-title-wrap">
+                                    <div class="step-title">HOT CUTOVER (CNF)</div>
+                                    <div class="step-desc">Deploy CNF & Dynamic SLA Steering (0ms Loss)</div>
+                                </div>
+                                <span class="step-completion-badge" id="step-4-badge" style="display:none;">✓ CNF ACTIVE</span>
+                            </div>
+                            <div class="stage-card-body">
+                                <div class="step-status-wrapper">
+                                    <span class="status-label">STATUS:</span>
+                                    <span class="step-status" id="step-4-status">PENDING</span>
+                                </div>
+                                <div class="step-progress-wrapper" id="step-4-progress" style="display:none;">
+                                    <div class="step-progress-fill" id="step-4-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <div class="step-detail-text" id="step-4-detail">Sub-second SLA Steering</div>
+                            </div>
+                            <div class="stage-card-actions">
+                                <button class="modern-btn btn-step btn-stage-action" id="btn-step-cutover" onclick="triggerModernization('cutover_cnf')">
+                                    <span class="btn-icon">3️⃣</span> ATOMIC HOT CUTOVER
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -575,8 +586,17 @@
                     Inject real-time impairments on live Linux kernel Netem interfaces to validate dynamic SLA steering and packet survival.
                 </div>
 
+                <!-- Active Chaos Status Card -->
+                <div class="chaos-active-card" id="chaos-active-card">
+                    <div class="chaos-active-header">
+                        <span class="chaos-status-indicator pulse-green" id="chaos-indicator-dot"></span>
+                        <span class="chaos-status-title" id="chaos-status-title">BASELINE: ALL LINKS NORMAL</span>
+                    </div>
+                    <div class="chaos-status-desc" id="chaos-status-desc">No active impairments. Dynamic SLA path steering operational.</div>
+                </div>
+
                 <div class="sidebar-btn-stack">
-                    <button class="chaos-btn btn-danger" onclick="triggerChaos('jam_pleops')">
+                    <button class="chaos-btn btn-danger" id="btn-chaos-jam" onclick="triggerChaos('jam_pleops', '', this)">
                         <span class="btn-icon">🚨</span>
                         <div class="btn-text">
                             <div class="btn-title">EW JAMMING ATTACK</div>
@@ -584,7 +604,7 @@
                         </div>
                     </button>
 
-                    <button class="chaos-btn btn-warning" onclick="triggerChaos('rain_fade_milsat')">
+                    <button class="chaos-btn btn-warning" id="btn-chaos-rain" onclick="triggerChaos('rain_fade_milsat', '', this)">
                         <span class="btn-icon">🌧️</span>
                         <div class="btn-text">
                             <div class="btn-title">SATELLITE RAIN FADE</div>
@@ -592,7 +612,7 @@
                         </div>
                     </button>
 
-                    <button class="chaos-btn btn-warning" onclick="triggerChaos('degrade_losrf')">
+                    <button class="chaos-btn btn-warning" id="btn-chaos-rf" onclick="triggerChaos('degrade_losrf', '', this)">
                         <span class="btn-icon">📡</span>
                         <div class="btn-text">
                             <div class="btn-title">RF MULTIPATH / JAM</div>
@@ -600,7 +620,7 @@
                         </div>
                     </button>
 
-                    <button class="chaos-btn btn-flapping" onclick="triggerChaos('flap_link')">
+                    <button class="chaos-btn btn-flapping" id="btn-chaos-flap" onclick="triggerChaos('flap_link', '', this)">
                         <span class="btn-icon">🔄</span>
                         <div class="btn-text">
                             <div class="btn-title">LINK FLAP SIMULATOR</div>
@@ -608,7 +628,7 @@
                         </div>
                     </button>
 
-                    <button class="chaos-btn btn-success" onclick="triggerChaos('clean_slate')">
+                    <button class="chaos-btn btn-success" id="btn-chaos-clean" onclick="triggerChaos('clean_slate', '', this)">
                         <span class="btn-icon">🛡️</span>
                         <div class="btn-text">
                             <div class="btn-title">RESTORE CLEAN SLATE</div>
@@ -616,7 +636,7 @@
                         </div>
                     </button>
 
-                    <button class="chaos-btn btn-info" onclick="triggerChaos('apply_profiles')">
+                    <button class="chaos-btn btn-info" id="btn-chaos-profiles" onclick="triggerChaos('apply_profiles', '', this)">
                         <span class="btn-icon">⚙️</span>
                         <div class="btn-text">
                             <div class="btn-title">APPLY TACTICAL PROFILES</div>

@@ -239,16 +239,34 @@ class SDWANControllerDaemon:
             self.stop()
 
     def _start_telemetry_server(self):
-        try:
-            SDWANTelemetryHTTPHandler.controller_daemon = self
-            self.http_server = ThreadingHTTPServer(("0.0.0.0", self.telemetry_port), SDWANTelemetryHTTPHandler)
-            self.http_thread = threading.Thread(target=self.http_server.serve_forever, daemon=True)
-            self.http_thread.start()
-            self.logger.info(
-                f"SD-WAN Prometheus /metrics endpoint active at http://0.0.0.0:{self.telemetry_port}/metrics"
-            )
-        except Exception as e:
-            self.logger.error(f"Failed to start telemetry endpoint server: {e}")
+        SDWANTelemetryHTTPHandler.controller_daemon = self
+
+        def _bind_and_serve():
+            max_attempts = 60
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    self.http_server = ThreadingHTTPServer(("0.0.0.0", self.telemetry_port), SDWANTelemetryHTTPHandler)
+                    self.logger.info(
+                        f"SD-WAN Prometheus /metrics endpoint active at http://0.0.0.0:{self.telemetry_port}/metrics"
+                    )
+                    self.http_server.serve_forever()
+                    return
+                except OSError as e:
+                    if attempt < max_attempts and self._running:
+                        if attempt == 1 or attempt % 5 == 0:
+                            self.logger.warning(
+                                f"Port {self.telemetry_port} temporarily unavailable ({e}), retrying ({attempt}/{max_attempts})..."
+                            )
+                        time.sleep(0.5)
+                    else:
+                        self.logger.error(f"Failed to bind telemetry endpoint server on port {self.telemetry_port}: {e}")
+                        return
+                except Exception as e:
+                    self.logger.error(f"Error in telemetry endpoint server: {e}")
+                    return
+
+        self.http_thread = threading.Thread(target=_bind_and_serve, daemon=True)
+        self.http_thread.start()
 
     def _handle_signal(self, signum, frame):
         self.logger.info(f"Received signal {signum}, initiating graceful shutdown...")

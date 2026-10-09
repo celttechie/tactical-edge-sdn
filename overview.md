@@ -105,5 +105,5 @@ This repository provides an end-to-end, runnable reference implementation modeli
 * **Modern Containerized SDN Dataplane (`src/dataplane/`):** Deploys containerized FRR and WireGuard overlays for dynamic multipath routing.
 * **Intelligent SD-WAN Policy Controller (`src/controller/`):** Executes real-time link SLA probing and automated route mutation.
 * **Air-Gap Packaging (`packages/`):** Encapsulates the entire edge networking suite into declarative Zarf packages for disconnected delivery.
-* **Tactical Low-SWaP Edge Deployment:** Verifies deployment onto physical ARM64 tactical hardware (OrangePi 5 running K3s).
+* **Low-SWaP Architectural Portability & Extensibility:** Engineered with multi-architecture OCI/Zarf support and pre-configured profiles (`values-orangepi.yaml`) ready for physical ARM64 tactical single-board computers (OrangePi 5, Jetson, or Raspberry Pi CM4).
 * **Automated Chaos Testing & OSCAL Compliance (`tests/`, `compliance/`):** Validates sub-second failover under simulated link degradation and produces automated Lula OSCAL compliance assessments.
