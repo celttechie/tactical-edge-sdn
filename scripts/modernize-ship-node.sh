@@ -10,8 +10,36 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SHIP_TARGET="ship-gateway"
+SHIP_TARGET="${SHIP_TARGET:-ship-gateway}"
 STEP="full"
+
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new)
+
+remote_ssh() {
+    ssh "${SSH_OPTS[@]}" "${SHIP_TARGET}" "$@"
+}
+
+stage_file_if_needed() {
+    local src="$1"
+    local dest_dir="$2"
+    local base
+    base="$(basename "$src")"
+    local remote_path="${dest_dir}/${base}"
+    
+    local local_size
+    local_size=$(stat -c%s "$src" 2>/dev/null || stat -f%z "$src" 2>/dev/null || echo 0)
+    local remote_size
+    remote_size=$(remote_ssh "stat -c%s ${remote_path} 2>/dev/null || echo 0")
+    
+    if [ "$local_size" -gt 0 ] && [ "$local_size" -eq "$remote_size" ]; then
+        echo " -> [Cached] ${base} already staged on ${SHIP_TARGET} (${local_size} bytes)."
+    else
+        echo " -> [Staging] Copying ${base} to ${SHIP_TARGET}:${dest_dir}..."
+        scp -q "${SSH_OPTS[@]}" "$src" "${SHIP_TARGET}:${dest_dir}/"
+    fi
+}
+
+trap 'echo -e "\n[✗] Error occurred during ship modernization at line $LINENO." >&2' ERR
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -62,7 +90,7 @@ if [[ "$STEP" == "reset-day0" || "$STEP" == "reset" ]]; then
     echo "  Tactical Edge Modernization: Resetting ${SHIP_TARGET} to Day 0 VNF  "
     echo "======================================================================"
     echo "==> Decommissioning CNF and stopping K3s service on ${SHIP_TARGET}..."
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
+    remote_ssh "bash -s" << 'EOF'
 sudo systemctl stop k3s 2>/dev/null || true
 sudo systemctl disable k3s 2>/dev/null || true
 sudo systemctl enable --now sdwan-controller.service 2>/dev/null || true
@@ -139,29 +167,29 @@ fi
 # ------------------------------------------------------------------------------
 if [[ "$STEP" == "full" || "$STEP" == "bootstrap-k3s" || "$STEP" == "k3s" ]]; then
     echo "==> [Step 1/5] Verifying legacy routing is active and passing traffic..."
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "systemctl is-active sdwan-controller.service >/dev/null 2>&1 && echo ' [✓] Legacy routing service is active.' || echo ' [!] Legacy service not currently running (proceeding with clean modernization).'"
+    remote_ssh "systemctl is-active sdwan-controller.service >/dev/null 2>&1 && echo ' [✓] Legacy routing service is active.' || echo ' [!] Legacy service not currently running (proceeding with clean modernization).'"
 
     echo "==> [Step 2/5] Staging K3s and Zarf binaries onto ${SHIP_TARGET} (Background Pre-stage)..."
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "mkdir -p ~/zarf-stage ~/bin ~/.zarf-cache"
+    remote_ssh "mkdir -p ~/zarf-stage ~/bin ~/.zarf-cache"
     
     if [ -n "${K3S_BIN}" ] && [ -f "${K3S_BIN}" ]; then
-        scp -q -o StrictHostKeyChecking=no "${K3S_BIN}" "${SHIP_TARGET}:~/bin/k3s"
-        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo chmod +x /usr/local/bin/k3s && sudo ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl"
+        stage_file_if_needed "${K3S_BIN}" "~/bin"
+        remote_ssh "if [ ! -x /usr/local/bin/k3s ] || [ ~/bin/k3s -nt /usr/local/bin/k3s ]; then sudo cp ~/bin/k3s /usr/local/bin/k3s && sudo chmod +x /usr/local/bin/k3s && sudo ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl; fi"
     fi
     if [ -n "${ZARF_BIN}" ] && [ -f "${ZARF_BIN}" ]; then
-        scp -q -o StrictHostKeyChecking=no "${ZARF_BIN}" "${SHIP_TARGET}:~/bin/zarf"
-        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/zarf"
+        stage_file_if_needed "${ZARF_BIN}" "~/bin"
+        remote_ssh "if [ ! -x /usr/local/bin/zarf ] || [ ~/bin/zarf -nt /usr/local/bin/zarf ]; then sudo cp ~/bin/zarf /usr/local/bin/zarf && sudo chmod +x /usr/local/bin/zarf; fi"
     fi
 
     if [ -n "${K3S_CORE_IMAGES}" ] && [ -f "${K3S_CORE_IMAGES}" ]; then
         echo "==> Staging foundational K3s air-gap images (${K3S_CORE_IMAGES})..."
         IMG_BASE="$(basename "${K3S_CORE_IMAGES}")"
-        scp -q -o StrictHostKeyChecking=no "${K3S_CORE_IMAGES}" "${SHIP_TARGET}:~/zarf-stage/${IMG_BASE}"
-        ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "sudo mkdir -p /var/lib/rancher/k3s/agent/images && if [[ '${IMG_BASE}' == *.zst ]]; then sudo zstd -d ~/zarf-stage/${IMG_BASE} -o /var/lib/rancher/k3s/agent/images/k3s-core-images.tar; else sudo cp ~/zarf-stage/${IMG_BASE} /var/lib/rancher/k3s/agent/images/; fi"
+        stage_file_if_needed "${K3S_CORE_IMAGES}" "~/zarf-stage"
+        remote_ssh "sudo mkdir -p /var/lib/rancher/k3s/agent/images && if [ ! -f /var/lib/rancher/k3s/agent/images/k3s-core-images.tar ]; then if [[ '${IMG_BASE}' == *.zst ]]; then sudo zstd -d ~/zarf-stage/${IMG_BASE} -o /var/lib/rancher/k3s/agent/images/k3s-core-images.tar; else sudo cp ~/zarf-stage/${IMG_BASE} /var/lib/rancher/k3s/agent/images/; fi; fi"
     fi
 
     echo "==> [Step 3/5] Bootstrapping air-gapped K3s cluster in background (Zero-Downtime)..."
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
+    remote_ssh "bash -s" << 'EOF'
 if ! command -v k3s >/dev/null 2>&1; then
     echo "[-] k3s binary missing from PATH"
     exit 1
@@ -218,14 +246,13 @@ fi
 if [[ "$STEP" == "full" || "$STEP" == "init-zarf" || "$STEP" == "zarf" ]]; then
     echo "==> [Step 4/5] Staging Zarf initialization package and running zarf init in background..."
     if [ -n "${ZARF_INIT_PKG}" ] && [ -f "${ZARF_INIT_PKG}" ]; then
-        INIT_BASE="$(basename "${ZARF_INIT_PKG}")"
-        scp -q -o StrictHostKeyChecking=no "${ZARF_INIT_PKG}" "${SHIP_TARGET}:~/.zarf-cache/${INIT_BASE}"
+        stage_file_if_needed "${ZARF_INIT_PKG}" "~/.zarf-cache"
     fi
     if [ -n "${PACKAGE_PATH}" ] && [ -f "${PACKAGE_PATH}" ]; then
-        scp -q -o StrictHostKeyChecking=no "${PACKAGE_PATH}" "${SHIP_TARGET}:~/zarf-stage/"
+        stage_file_if_needed "${PACKAGE_PATH}" "~/zarf-stage"
     fi
 
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s" << 'EOF'
+    remote_ssh "bash -s" << 'EOF'
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "==> Initializing Zarf on ship-gateway..."
 zarf init --confirm --components zarf-seed-registry,zarf-registry,zarf-injector
@@ -246,16 +273,16 @@ if [[ "$STEP" == "full" || "$STEP" == "cutover-cnf" || "$STEP" == "deploy-cnf" ]
     echo "==> [Step 5/5] Deploying containerized SD-WAN CNF and performing Atomic Hot Cutover..."
     if [ -n "${PACKAGE_PATH}" ] && [ -f "${PACKAGE_PATH}" ]; then
         PKG_NAME="$(basename "${PACKAGE_PATH}")"
-        scp -q -o StrictHostKeyChecking=no "${PACKAGE_PATH}" "${SHIP_TARGET}:~/zarf-stage/"
+        stage_file_if_needed "${PACKAGE_PATH}" "~/zarf-stage"
     else
-        PKG_NAME=$(ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "ls -t ~/zarf-stage/zarf-package-tactical-sdn-stack-*.tar.zst 2>/dev/null | head -n 1 | xargs -r basename || echo ''")
+        PKG_NAME=$(remote_ssh "ls -t ~/zarf-stage/zarf-package-tactical-sdn-stack-*.tar.zst 2>/dev/null | head -n 1 | xargs -r basename || echo ''")
         if [ -z "${PKG_NAME}" ]; then
             echo "[-] Error: No Zarf package found on host or staged on ${SHIP_TARGET}." >&2
             exit 1
         fi
     fi
 
-    ssh -o StrictHostKeyChecking=no "${SHIP_TARGET}" "bash -s -- \"${PKG_NAME}\"" << 'EOF'
+    remote_ssh "bash -s -- \"${PKG_NAME}\"" << 'EOF'
 PKG_NAME="$1"
 REMOTE_PKG="${HOME}/zarf-stage/${PKG_NAME}"
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

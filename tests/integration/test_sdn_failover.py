@@ -10,67 +10,30 @@ Demonstrates:
 4. Hitless recovery: When P-LEO SLA normalizes, traffic seamlessly returns to primary bearer.
 """
 
-import json
-import subprocess
+import os
 import sys
 import time
 from datetime import datetime
 
-# Router SSH connection target (uses ~/.ssh/config alias ship-gateway)
-SSH_ROUTER_CMD = [
-    "ssh",
-    "-o",
-    "StrictHostKeyChecking=no",
-    "-o",
-    "UserKnownHostsFile=/dev/null",
-    "ship-gateway",
-]
+# Add project root to sys.path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
+from tests.common.ssh import (
+    exec_on_ship,
+    get_router_active_route,
+    probe_enclave_to_shore,
+    run_cmd,
+)
 
-def run_cmd(cmd, check=True):
-    if isinstance(cmd, str):
-        res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    else:
-        res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if check and res.returncode != 0:
-        raise RuntimeError(f"Command failed: {cmd}\nStderr: {res.stderr}\nStdout: {res.stdout}")
-    return res
-
-
-def exec_on_router(command: str) -> str:
-    res = run_cmd(SSH_ROUTER_CMD + [command], check=False)
-    return res.stdout.strip()
-
-
-def probe_enclave_to_shore(target_ip: str = "10.100.1.1"):
-    """Probe Shore Gateway from Enclave Client via router."""
-    probe_cmd = ["ssh", "enclave-client", f"curl -s -m 6 http://{target_ip}:8080"]
-    t0 = time.time()
-    res = run_cmd(probe_cmd, check=False)
-    elapsed_ms = (time.time() - t0) * 1000.0
-    if res.returncode == 0 and "OPERATIONAL" in res.stdout:
-        return True, elapsed_ms, res.stdout.strip()
-    return False, elapsed_ms, res.stderr.strip() or res.stdout.strip()
+exec_on_router = exec_on_ship
 
 
 def get_router_active_primary() -> str:
     """Reads the current lowest metric route on the router."""
-    out = exec_on_router("ip route show default")
-    lines = out.splitlines()
-    if not lines:
-        return "UNKNOWN"
-    # Find the line with the lowest metric
-    lowest_metric = 99999
-    primary_if = "UNKNOWN"
-    for line in lines:
-        parts = line.split()
-        if "dev" in parts and "metric" in parts:
-            dev = parts[parts.index("dev") + 1]
-            metric = int(parts[parts.index("metric") + 1])
-            if metric < lowest_metric:
-                lowest_metric = metric
-                primary_if = dev
-    return f"{primary_if} (metric {lowest_metric})"
+    dev, metric = get_router_active_route()
+    return f"{dev} (metric {metric})"
 
 
 def test_sdn_dynamic_steering():

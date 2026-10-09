@@ -28,6 +28,16 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo -e "\n${RED}======================================================================${NC}" >&2
+        echo -e "${RED}  [FAILURE] Lifecycle run failed with exit code ${exit_code}!${NC}" >&2
+        echo -e "${RED}======================================================================${NC}\n" >&2
+    fi
+}
+trap cleanup EXIT
+
 log_step() {
     echo -e "\n${BLUE}======================================================================${NC}"
     echo -e "${BLUE}  $1${NC}"
@@ -35,6 +45,11 @@ log_step() {
 }
 
 cd "${REPO_ROOT}"
+
+PYTHON_BIN="python3"
+if [ -x "${REPO_ROOT}/.venv/bin/python" ]; then
+    PYTHON_BIN="${REPO_ROOT}/.venv/bin/python"
+fi
 
 START_TIME=$(date +%s)
 
@@ -54,7 +69,7 @@ log_step "[Phase 2/7] Deploying sandbox topology with OpenTofu convergence barri
 # Phase 3: Milestone 1 - Legacy Routing Baseline Verification
 # ------------------------------------------------------------------------------
 log_step "[Phase 3/7] Running Milestone 1: Legacy Routing Baseline & Failure Tests..."
-python3 "${REPO_ROOT}/tests/integration/test_legacy_baseline.py"
+"$PYTHON_BIN" "${REPO_ROOT}/tests/integration/test_legacy_baseline.py"
 
 # ------------------------------------------------------------------------------
 # Phase 4: Modernize Ship Gateway to Cloud-Native CNF
@@ -66,19 +81,19 @@ log_step "[Phase 4/7] Modernizing ship-gateway to K3s and deploying Zarf CNF pac
 # Phase 5: Milestone 2 - SD-WAN Failover & Path Steering Verification
 # ------------------------------------------------------------------------------
 log_step "[Phase 5/7] Running Milestone 2: SD-WAN Dynamic Failover & SLA Tests..."
-python3 "${REPO_ROOT}/tests/integration/test_sdn_failover.py"
+"$PYTHON_BIN" "${REPO_ROOT}/tests/integration/test_sdn_failover.py"
 
 # ------------------------------------------------------------------------------
 # Phase 6: Milestone 4 - Automated Continuous Compliance (Lula OSCAL)
 # ------------------------------------------------------------------------------
 log_step "[Phase 6/7] Running Milestone 4: Lula OSCAL Automated Compliance Suite..."
-python3 -m unittest "${REPO_ROOT}/tests/integration/test_lula_compliance.py"
+"$PYTHON_BIN" -m unittest "${REPO_ROOT}/tests/integration/test_lula_compliance.py"
 
 # ------------------------------------------------------------------------------
 # Phase 7: Quantitative DDIL Chaos Resiliency Benchmark
 # ------------------------------------------------------------------------------
 log_step "[Phase 7/7] Running DDIL Chaos Engineering & Convergence Resiliency Benchmark..."
-python3 "${REPO_ROOT}/tests/chaos/run_resiliency_benchmark.py"
+"$PYTHON_BIN" "${REPO_ROOT}/tests/chaos/run_resiliency_benchmark.py"
 
 END_TIME=$(date +%s)
 TOTAL_DURATION=$((END_TIME - START_TIME))

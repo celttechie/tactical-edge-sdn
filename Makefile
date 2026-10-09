@@ -65,8 +65,8 @@ scan-trivy: ## Run Trivy vulnerability scan on local container image
 	@echo "==> Running Trivy vulnerability scan..."
 	@if command -v trivy >/dev/null 2>&1; then \
 		trivy image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 tactical-sdn-stack:local; \
-	elif [ -x /home/bjarrett/.local/bin/trivy ]; then \
-		/home/bjarrett/.local/bin/trivy image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 tactical-sdn-stack:local; \
+	elif [ -x "$$HOME/.local/bin/trivy" ]; then \
+		"$$HOME/.local/bin/trivy" image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 tactical-sdn-stack:local; \
 	else \
 		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/.trivyignore:/.trivyignore aquasec/trivy:latest image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /.trivyignore --exit-code 1 tactical-sdn-stack:local; \
 	fi

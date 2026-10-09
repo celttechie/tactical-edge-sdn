@@ -13,7 +13,7 @@ import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 STATIC_DIR = os.path.join(PROJECT_ROOT, "src/dashboard/static")
-OUTPUT_PNG = "/home/bjarrett/.gemini/antigravity-cli/brain/2e7b6100-bc44-4628-9d5e-5149d677d26c/tactical_hud_screenshot.png"
+OUTPUT_PNG = os.getenv("OUTPUT_PNG", "/tmp/tactical_hud_screenshot.png")
 
 def get_live_status():
     # Try localhost first
@@ -24,16 +24,17 @@ def get_live_status():
     except Exception:
         pass
 
-    # Try SSH to router via hypervisor
+    # Try SSH to router
     try:
+        router_target = os.getenv("SHIP_GATEWAY_HOST", "ship-gateway")
         cmd = [
-            "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
-            "-J", "sandbox-hypervisor-node",
-            "bjarrett@10.200.1.2",
+            "ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new",
+            "-o", "ConnectTimeout=2",
+            router_target,
             "curl -s http://127.0.0.1:8080/api/status"
         ]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3.0)
-        if res.returncode == 0:
+        if res.returncode == 0 and res.stdout:
             return json.loads(res.stdout)
     except Exception:
         pass

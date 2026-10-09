@@ -15,24 +15,14 @@ import subprocess
 import sys
 import time
 
-ROUTER_SSH = [
-    "ssh",
-    "-o",
-    "StrictHostKeyChecking=no",
-    "-o",
-    "UserKnownHostsFile=/dev/null",
-    "-J",
-    "sandbox-hypervisor-node",
-    "bjarrett@10.200.1.2",
-]
+# Add project root to sys.path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
+from tests.common.ssh import ENCLAVE_IP, SHORE_IP, exec_on_ship
 
-def exec_on_router(command: str) -> str:
-    cmd = ROUTER_SSH + [command]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
-    if res.returncode != 0:
-        raise RuntimeError(f"Router command failed: {command}\nStderr: {res.stderr}\nStdout: {res.stdout}")
-    return res.stdout.strip()
+exec_on_router = exec_on_ship
 
 
 def test_enclave_shore_traffic_flow():

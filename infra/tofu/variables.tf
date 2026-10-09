@@ -19,7 +19,7 @@ variable "ssh_public_key_path" {
 variable "admin_username" {
   description = "Default administrative username for cloud-init provisioned VMs"
   type        = string
-  default     = "bjarrett"
+  default     = "sdnadmin"
 }
 
 variable "ssh_private_key_path" {
