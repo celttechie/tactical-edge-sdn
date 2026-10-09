@@ -21,6 +21,13 @@ class RouteActuator:
 
     def __init__(self, config: ControllerConfig):
         self.config = config
+        self._ensure_management_isolation()
+
+    def _ensure_management_isolation(self):
+        """Ensures local management plane responses from 10.200.1.2 route directly over eth-mgmt."""
+        self._exec("ip rule add from 10.200.1.2 table 200 priority 100 2>/dev/null || true")
+        self._exec("ip route add 10.200.1.0/24 dev eth-mgmt table 200 2>/dev/null || true")
+        self._exec("ip route add default via 10.200.1.10 dev eth-mgmt table 200 2>/dev/null || true")
 
     def _exec(self, cmd: str) -> subprocess.CompletedProcess:
         logger.debug(f"Executing: {cmd}")

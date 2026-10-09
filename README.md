@@ -2,7 +2,7 @@
 
 A reference architecture and proof-of-concept demonstrating the modernization of legacy shipboard/tactical network routing (e.g., ADNS/CANES legacy baselines) to a cloud-native, containerized **Software-Defined Networking (SD-WAN)** baseline.
 
-Built for **Denied, Disrupted, Intermittent, and Limited (DDIL)** environments, packaged as air-gap OCI artifacts with **Zarf**, validated continuously against DISA STIGs using **Lula (OSCAL)**, and deployed across a hybrid multi-tier edge infrastructure (Dell Precision T5600 hypervisor, OrangePi tactical edge unit, and Shore Gateway).
+Built for **Denied, Disrupted, Intermittent, and Limited (DDIL)** environments, packaged as air-gap OCI artifacts with **Zarf**, validated continuously against DISA STIGs using **Lula (OSCAL)**, and deployed across a multi-tier edge infrastructure modeling shipboard core networking and a Shore Gateway on a Dell Precision T5600 hypervisor, with pre-configured support for low-SWaP ARM64 tactical edge hardware (e.g., OrangePi 5).
 
 ---
 
@@ -30,9 +30,9 @@ flowchart TD
         end
     end
 
-    subgraph TacticalEdge["Tactical Edge Deployable Unit (OrangePi 5)"]
+    subgraph TacticalExtensibility["Hardware Extensibility Target (Low-SWaP ARM64 / OrangePi 5)"]
         OPI_K3S["Air-Gapped K3s Runtime"]
-        OPI_SDWAN["Tactical SD-WAN Agent\n(Multi-Bearer Dynamic Steering)"]
+        OPI_SDWAN["Tactical SD-WAN Agent\n(values-orangepi.yaml Profile)"]
     end
 
     %% Network Connections
@@ -41,7 +41,7 @@ flowchart TD
 
     CNF_ROUTER <==>|"Dynamic Multi-Bearer Mesh (P-LEO / SATCOM / UHF)"| AWS_GW
     SDN_CTRL --> CNF_ROUTER
-    OPI_SDWAN <==>|"Encrypted Overlay Mesh"| CNF_ROUTER
+    OPI_SDWAN -.->|"Planned Low-SWaP Mesh Extension"| CNF_ROUTER
     CNF_ROUTER --> AWS_MON
     AWS_HUD -.->|"Out-of-Band Telemetry & Orchestration (br-shore-hub)"| CNF_ROUTER
 ```
@@ -186,20 +186,40 @@ lula validate -f compliance/lula/oscal-component.yaml --confirm-execution
 python3 tests/integration/test_lula_compliance.py
 ```
 
-### Step 6: Run Regression & Unit Tests
+### Step 6: Interactive Demonstration Walkthrough
+To verify system posture, pre-flight health, or reset between demonstration runs:
 ```bash
-# Unit tests
+# Check tunnel, gateway posture, and live C2 streaming rate
+./scripts/demo-walkthrough.sh status
+
+# Revert shipboard gateway back to Day 0 Legacy VNF baseline for recording Scene 1
+./scripts/demo-walkthrough.sh reset
+
+# Run automated pre-flight assertion suite
+./scripts/demo-walkthrough.sh preflight
+```
+
+### Step 7: Run Regression & Unit Tests
+```bash
+# Unit tests (policy engine, route actuator, SLA prober)
 python3 -m unittest discover tests/unit
 
-# Integration tests
-python3 tests/integration/test_zarf_airgap.py
-python3 tests/integration/test_lula_compliance.py
+# Integration tests (Zarf packaging, Lula OSCAL STIG compliance, CNF deployment)
+python3 -m unittest discover tests/integration
 ```
 
 ---
 
-## 7. Hardware & Lab Setup
+## 7. Hardware & Lab Infrastructure
 
-* **Dell Precision T5600:** Runs the nested Libvirt hypervisor, simulated multi-bearer network bridges (`br-pleops`, `br-milsat`, `br-losrf`), and shipboard core platform.
-* **OrangePi 5 / ARM64 SBC:** Deployed tactical edge node running K3s and offline Zarf deployments.
-* **Tactical Shore Gateway:** Central hub running FRRouting / WireGuard aggregation and telemetry ingestion.
+### Primary Operational Testbed (Implemented)
+* **Dell Precision T5600 Hypervisor:** Hosts the nested Libvirt/KVM virtualization environment, isolated multi-bearer bridge networks (`br-pleops`, `br-milsat`, `br-losrf`, `br-shore-hub`), and active virtual nodes:
+  * `ship-gateway` (`10.200.1.2`): Modernized shipboard router transitioning from Day 0 Linux VNF to Day 1+ K3s CNF.
+  * `shore-gateway` (`10.200.1.10`): Fleet NOC & Out-of-Band Operations HUD server (port 8080) and UDP telemetry ingest.
+  * `enclave-client` (`10.10.1.10`): Shipboard mission enclave generating live 40 pkts/s C2 telemetry.
+
+### Hardware Extensibility Roadmap (Low-SWaP ARM64 / OrangePi 5)
+The SDN dataplane and controller daemon are engineered with zero-dependency userspace probing and a minimal resource footprint (<128MB RAM, <50m CPU), making them natively compatible with resource-constrained single-board computers (SBCs):
+* **Target Profile:** Pre-configured Helm overrides are provided in [`packages/helm/tactical-sdn/values-orangepi.yaml`](packages/helm/tactical-sdn/values-orangepi.yaml).
+* **Operational Value:** Extends the tactical mesh down to unmanned surface/undersea vehicles (USVs/UUVs) or man-portable tactical backpack kits where full rackmount hypervisors cannot fit due to Size, Weight, Power, and Cooling (SWaP-C) constraints.
+* **Portability:** Because the containerized CNF and Zarf packages support multi-architecture OCI artifacts, deploying to physical hardware (OrangePi 5, NVIDIA Jetson, or Raspberry Pi CM4) requires only mapping the physical interfaces to the bearer names.

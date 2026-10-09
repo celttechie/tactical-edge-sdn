@@ -38,18 +38,107 @@ function updateZuluTime() {
 setInterval(updateZuluTime, 1000);
 updateZuluTime();
 
+// HUD Toast System & Event Tracking
+const seenEventKeys = new Set();
+let isInitialStateLoad = true;
+
+function showHUDToast(severity, tag, message) {
+    const container = document.getElementById("hud-toast-container");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    const sevClass = severity === "DANGER" ? "toast-danger" :
+                     severity === "WARNING" ? "toast-warning" :
+                     severity === "SUCCESS" ? "toast-success" : "toast-info";
+    const icon = severity === "DANGER" ? "🚨" :
+                 severity === "WARNING" ? "⚠" :
+                 severity === "SUCCESS" ? "✓" : "ℹ️";
+
+    toast.className = `hud-toast ${sevClass}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-content">
+            <strong>[${tag}]</strong> ${message}
+        </div>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(50px)";
+        setTimeout(() => toast.remove(), 400);
+    }, 4500);
+}
+
+// Reactive Chaos Active Status Card inside Drawer
+function updateChaosStatusCard(chaosState) {
+    const card = document.getElementById("chaos-active-card");
+    const dot = document.getElementById("chaos-indicator-dot");
+    const title = document.getElementById("chaos-status-title");
+    const desc = document.getElementById("chaos-status-desc");
+    if (!card || !title || !desc) return;
+
+    if (!chaosState) return;
+    const pleopsState = chaosState.pleops || "NORMAL";
+    const milsatState = chaosState.milsat || "NORMAL";
+    const losrfState = chaosState.losrf || "NORMAL";
+
+    if (pleopsState.includes("BLACKOUT") || pleopsState.includes("100PCT")) {
+        card.className = "chaos-active-card status-jammed";
+        if (dot) dot.className = "chaos-status-indicator pulse-red";
+        title.innerText = "🚨 ACTIVE: EW RF JAMMING ATTACK";
+        desc.innerText = "P-LEO link severed (100% loss). Dynamic SLA failover to alternate bearer.";
+    } else if (milsatState.includes("RAIN_FADE") || milsatState.includes("DEGRADED")) {
+        card.className = "chaos-active-card status-degraded";
+        if (dot) dot.className = "chaos-status-indicator pulse-yellow";
+        title.innerText = "🌧️ ACTIVE: SATELLITE RAIN FADE";
+        desc.innerText = "350ms delay + 15% packet loss on MILSAT GEO link.";
+    } else if (losrfState.includes("JAMMING") || losrfState.includes("DEGRADED")) {
+        card.className = "chaos-active-card status-degraded";
+        if (dot) dot.className = "chaos-status-indicator pulse-yellow";
+        title.innerText = "📡 ACTIVE: RF MULTIPATH INTERFERENCE";
+        desc.innerText = "150ms delay + 20% packet loss on Tactical LOS-RF link.";
+    } else if (pleopsState === "FLAPPING") {
+        card.className = "chaos-active-card status-degraded";
+        if (dot) dot.className = "chaos-status-indicator pulse-yellow";
+        title.innerText = "🔄 ACTIVE: LINK FLAPPING SIMULATOR";
+        desc.innerText = "Rapid 2s on/off link cycle triggering route damping hysteresis.";
+    } else {
+        card.className = "chaos-active-card";
+        if (dot) dot.className = "chaos-status-indicator pulse-green";
+        title.innerText = "BASELINE: ALL BEARERS HEALTHY";
+        desc.innerText = "No active impairments. Dynamic SLA path steering operational.";
+    }
+}
+
+
 // Particle Generation & Movement
+function getBearerPacketSpeed(bearerKey) {
+    if (!latestState || !latestState.bearers) {
+        return bearerKey === "milsat" ? 0.010 : 0.020;
+    }
+    const bInfo = latestState.bearers[bearerKey];
+    const latency = bInfo && bInfo.latency_ms ? bInfo.latency_ms : (bearerKey === "milsat" ? 500 : 40);
+    if (latency > 300) return 0.009 + Math.random() * 0.003; // High-latency GEO MILSAT
+    if (latency > 100) return 0.014 + Math.random() * 0.004; // Moderate latency
+    return 0.022 + Math.random() * 0.004; // Low-latency LEO / Tactical LOS-RF
+}
+
 function updateParticles(primaryBearer) {
-    // Spawn new particle periodically
+    const activeBearer = primaryBearer || "pleops";
+
+    // Spawn new particle periodically from USS Enclave
     if (particles.length < MAX_PARTICLES && Math.random() < 0.35) {
         particles.push({
             segment: 0, // 0: Enclave->Router, 1: Router->Bearer, 2: Bearer->Shore
             progress: 0.0,
-            speed: 0.015 + Math.random() * 0.008,
-            bearer: primaryBearer || "pleops",
+            speed: 0.020 + Math.random() * 0.004, // Ingress link speed
+            bearer: activeBearer,
             size: 3.5 + Math.random() * 2
         });
     }
+
+    const bearersData = latestState ? latestState.bearers : {};
 
     // Advance particles
     for (let i = particles.length - 1; i >= 0; i--) {
@@ -58,12 +147,38 @@ function updateParticles(primaryBearer) {
         if (p.progress >= 1.0) {
             p.progress = 0.0;
             p.segment++;
-            if (p.segment > 2) {
+
+            if (p.segment === 1) {
+                // When departing Router, steer along current active primary bearer
+                p.bearer = activeBearer;
+                p.speed = getBearerPacketSpeed(p.bearer);
+                const bInfo = bearersData ? bearersData[p.bearer] : null;
+                p.severed = bInfo && (
+                    bInfo.readiness === "NMC" ||
+                    bInfo.packet_loss_pct >= 90 ||
+                    (bInfo.chaos_state && bInfo.chaos_state.includes("BLACKOUT"))
+                );
+            } else if (p.segment === 2) {
+                // Check if bearer dropped the packet (e.g. 100% loss / EW Jamming / NMC)
+                const bInfo = bearersData ? bearersData[p.bearer] : null;
+                const isSevered = p.severed || (bInfo && (
+                    bInfo.readiness === "NMC" ||
+                    bInfo.packet_loss_pct >= 90 ||
+                    (bInfo.chaos_state && bInfo.chaos_state.includes("BLACKOUT"))
+                ));
+                if (isSevered) {
+                    // Packet severed at jammed bearer; drop it before Shore
+                    particles.splice(i, 1);
+                    continue;
+                }
+            } else if (p.segment > 2) {
+                // Reached Shore C2 Hub
                 particles.splice(i, 1);
             }
         }
     }
 }
+
 
 // Draw Animated Topology Canvas
 function drawTopology() {
@@ -140,8 +255,8 @@ function drawTopology() {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // If Link has Chaos/Severe impairment, draw warning pulse
-        if (readiness === "NMC" || (bInfo && bInfo.chaos_state && bInfo.chaos_state.includes("BLACKOUT"))) {
+        // If Link has Chaos/Severe impairment, draw warning pulse and 100% loss badge
+        if (readiness === "NMC" || (bInfo && (bInfo.packet_loss_pct >= 90 || (bInfo.chaos_state && bInfo.chaos_state.includes("BLACKOUT"))))) {
             ctx.fillStyle = "rgba(255, 51, 68, 0.3)";
             ctx.beginPath();
             ctx.arc(node.x, node.y, 35, 0, Math.PI * 2);
@@ -154,6 +269,12 @@ function drawTopology() {
             ctx.moveTo(node.x - 12, node.y - 12); ctx.lineTo(node.x + 12, node.y + 12);
             ctx.moveTo(node.x + 12, node.y - 12); ctx.lineTo(node.x - 12, node.y + 12);
             ctx.stroke();
+
+            // Draw "100% PACKET LOSS" pill above node
+            ctx.fillStyle = "#ff3344";
+            ctx.font = "bold 9px 'Share Tech Mono', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("⚠️ 100% LOSS (DROPPING)", node.x, node.y - 32);
         }
     });
 
@@ -178,7 +299,13 @@ function drawTopology() {
         }
 
         // Particle Glow
-        const particleColor = p.bearer === "pleops" ? "#00ff66" :
+        const isSev = p.severed || (p.segment >= 1 && bearersData && bearersData[p.bearer] && (
+            bearersData[p.bearer].readiness === "NMC" ||
+            bearersData[p.bearer].packet_loss_pct >= 90 ||
+            (bearersData[p.bearer].chaos_state && bearersData[p.bearer].chaos_state.includes("BLACKOUT"))
+        ));
+        const particleColor = isSev ? "#ff3344" :
+                              p.bearer === "pleops" ? "#00ff66" :
                               p.bearer === "milsat" ? "#ffb800" :
                               p.bearer === "losrf"  ? "#00e5ff" : "#00ffff";
         ctx.shadowBlur = 10;
@@ -298,6 +425,28 @@ function drawThroughputChart() {
     });
 }
 
+// Step throughput chart timeline at steady 2 Hz
+function tickThroughputChart() {
+    if (!latestState) return;
+    const bData = latestState.bearers || {};
+    const pKbps = bData.pleops ? bData.pleops.throughput_kbps : 0;
+    const mKbps = bData.milsat ? bData.milsat.throughput_kbps : 0;
+    const lKbps = bData.losrf ? bData.losrf.throughput_kbps : 0;
+
+    chartHistory.timestamps.push(new Date().toLocaleTimeString());
+    chartHistory.pleops.push(pKbps);
+    chartHistory.milsat.push(mKbps);
+    chartHistory.losrf.push(lKbps);
+
+    if (chartHistory.timestamps.length > MAX_CHART_POINTS) {
+        chartHistory.timestamps.shift();
+        chartHistory.pleops.shift();
+        chartHistory.milsat.shift();
+        chartHistory.losrf.shift();
+    }
+    drawThroughputChart();
+}
+
 // Update UI Components with Live Telemetry State
 function renderState(state) {
     latestState = state;
@@ -370,16 +519,36 @@ function renderState(state) {
         if (jitEl) jitEl.innerHTML = `${b.jitter_ms.toFixed(1)} <span class="unit">ms</span>`;
 
         const lossEl = document.getElementById(`${key}-loss`);
-        if (lossEl) lossEl.innerHTML = `${b.packet_loss_pct.toFixed(1)} <span class="unit">%</span>`;
+        if (lossEl) {
+            if (b.packet_loss_pct >= 90) {
+                lossEl.innerHTML = `<span style="color: #ff3344; font-weight: bold;">${b.packet_loss_pct.toFixed(1)}% SEVERED</span>`;
+            } else if (b.packet_loss_pct > 10) {
+                lossEl.innerHTML = `<span style="color: #ffb800; font-weight: bold;">${b.packet_loss_pct.toFixed(1)}%</span>`;
+            } else {
+                lossEl.innerHTML = `${b.packet_loss_pct.toFixed(1)} <span class="unit">%</span>`;
+            }
+        }
 
         const scoreEl = document.getElementById(`${key}-score`);
         if (scoreEl) scoreEl.innerText = b.score.toFixed(1);
 
         const tpEl = document.getElementById(`${key}-throughput`);
-        if (tpEl) tpEl.innerHTML = `${b.throughput_kbps.toFixed(1)} <span class="unit">Kbps</span>`;
+        if (tpEl) {
+            if (b.packet_loss_pct >= 90 && b.raw_throughput_kbps > 10) {
+                tpEl.innerHTML = `<span style="color: #ff3344; font-weight: bold;">0.0 <span class="unit">Kbps</span></span> <span style="font-size: 8px; color: #ff3344;">[100% DROP]</span>`;
+            } else {
+                tpEl.innerHTML = `${b.throughput_kbps.toFixed(1)} <span class="unit">Kbps</span>`;
+            }
+        }
 
         const dropEl = document.getElementById(`${key}-drops`);
-        if (dropEl) dropEl.innerText = b.total_dropped;
+        if (dropEl) {
+            if (b.packet_loss_pct >= 90) {
+                dropEl.innerHTML = `<span style="color: #ff3344; font-weight: bold;">DROPPING (100%)</span>`;
+            } else {
+                dropEl.innerText = b.total_dropped;
+            }
+        }
 
         const chaosPill = document.getElementById(`${key}-chaos-pill`);
         if (chaosPill) {
@@ -394,38 +563,59 @@ function renderState(state) {
         }
     });
 
-    // 5. Append Chart Point
-    const pKbps = bData.pleops ? bData.pleops.throughput_kbps : 0;
-    const mKbps = bData.milsat ? bData.milsat.throughput_kbps : 0;
-    const lKbps = bData.losrf ? bData.losrf.throughput_kbps : 0;
-
-    chartHistory.timestamps.push(new Date().toLocaleTimeString());
-    chartHistory.pleops.push(pKbps);
-    chartHistory.milsat.push(mKbps);
-    chartHistory.losrf.push(lKbps);
-
-    if (chartHistory.timestamps.length > MAX_CHART_POINTS) {
-        chartHistory.timestamps.shift();
-        chartHistory.pleops.shift();
-        chartHistory.milsat.shift();
-        chartHistory.losrf.shift();
+    // 5. Seed initial chart points if first load
+    if (chartHistory.timestamps.length === 0) {
+        const pKbps = bData.pleops ? bData.pleops.throughput_kbps : 0;
+        const mKbps = bData.milsat ? bData.milsat.throughput_kbps : 0;
+        const lKbps = bData.losrf ? bData.losrf.throughput_kbps : 0;
+        for (let i = 0; i < 5; i++) {
+            chartHistory.timestamps.push(new Date().toLocaleTimeString());
+            chartHistory.pleops.push(pKbps);
+            chartHistory.milsat.push(mKbps);
+            chartHistory.losrf.push(lKbps);
+        }
+        drawThroughputChart();
     }
-    drawThroughputChart();
 
-    // 6. Update Event Log
+    // 6. Update Chaos Active Card Status in Drawer
+    if (state.chaos_state) {
+        updateChaosStatusCard(state.chaos_state);
+    }
+
+    // 7. Update Event Log & Fire Real-Time HUD Toasts
     if (state.recent_events && state.recent_events.length > 0) {
         const terminal = document.getElementById("events-terminal");
         const countBadge = document.getElementById("event-count");
         if (countBadge) countBadge.innerText = `${state.recent_events.length} EVENTS`;
 
+        // Check for new high-priority events to show as HUD Toasts
+        if (!isInitialStateLoad) {
+            state.recent_events.forEach(evt => {
+                const evtKey = `${evt.timestamp || evt.time_str}-${evt.type}-${evt.message}`;
+                if (!seenEventKeys.has(evtKey)) {
+                    seenEventKeys.add(evtKey);
+                    if (evt.type === "CHAOS_INJECTION" || evt.type === "ROUTE_FAILOVER") {
+                        showHUDToast(evt.severity, evt.type, evt.message);
+                    }
+                }
+            });
+        } else {
+            state.recent_events.forEach(evt => {
+                const evtKey = `${evt.timestamp || evt.time_str}-${evt.type}-${evt.message}`;
+                seenEventKeys.add(evtKey);
+            });
+            isInitialStateLoad = false;
+        }
+
         if (terminal) {
             terminal.innerHTML = "";
-            state.recent_events.forEach(evt => {
+            state.recent_events.forEach((evt, idx) => {
                 const entry = document.createElement("div");
                 const sevClass = evt.severity === "DANGER" ? "event-danger" :
                                  evt.severity === "WARNING" ? "event-warning" :
                                  evt.severity === "SUCCESS" ? "event-success" : "event-info";
-                entry.className = `event-entry ${sevClass}`;
+                const isNew = idx === 0 ? "event-new" : "";
+                entry.className = `event-entry ${sevClass} ${isNew}`;
                 entry.innerHTML = `
                     <span class="event-time">[${evt.time_str || ''}]</span>
                     <span class="event-tag">[${evt.type}]</span>
@@ -433,8 +623,10 @@ function renderState(state) {
                 `;
                 terminal.appendChild(entry);
             });
+            terminal.scrollTop = 0;
         }
     }
+
 
     // 7. Update Quantitative Resilience Benchmark Cards & Table
     const bench = state.resilience_benchmark;
@@ -560,8 +752,53 @@ async function pollStatus() {
 }
 
 // Interactive Chaos Trigger
-async function triggerChaos(action, target = "") {
+async function triggerChaos(action, target = "", btnEl = null) {
     console.log(`Triggering Chaos Action: ${action}`);
+
+    // If btnEl not explicitly passed, try to look up by ID
+    if (!btnEl) {
+        if (action === "jam_pleops") btnEl = document.getElementById("btn-chaos-jam");
+        else if (action === "rain_fade_milsat") btnEl = document.getElementById("btn-chaos-rain");
+        else if (action === "degrade_losrf") btnEl = document.getElementById("btn-chaos-rf");
+        else if (action === "flap_link") btnEl = document.getElementById("btn-chaos-flap");
+        else if (action === "clean_slate") btnEl = document.getElementById("btn-chaos-clean");
+        else if (action === "apply_profiles") btnEl = document.getElementById("btn-chaos-profiles");
+    }
+
+    // Instant optimistic visual feedback on the button
+    let origHtml = "";
+    if (btnEl) {
+        origHtml = btnEl.innerHTML;
+        btnEl.classList.add("btn-loading");
+        btnEl.disabled = true;
+        const titleEl = btnEl.querySelector(".btn-title");
+        if (titleEl) titleEl.innerText = "INJECTING...";
+    }
+
+    // Immediate optimistic update of Chaos Status Card
+    const card = document.getElementById("chaos-active-card");
+    const title = document.getElementById("chaos-status-title");
+    const desc = document.getElementById("chaos-status-desc");
+    if (card && title && desc) {
+        if (action === "jam_pleops") {
+            card.className = "chaos-active-card status-jammed";
+            title.innerText = "🚨 INJECTING: EW RF JAMMING...";
+            desc.innerText = "Severing P-LEO link (100% loss). Triggering SLA route mutation...";
+        } else if (action === "clean_slate") {
+            card.className = "chaos-active-card";
+            title.innerText = "🛡️ RESTORING: CLEAN SLATE...";
+            desc.innerText = "Clearing all Netem impairments across all tactical bearers...";
+        } else if (action === "rain_fade_milsat") {
+            card.className = "chaos-active-card status-degraded";
+            title.innerText = "🌧️ INJECTING: SATELLITE RAIN FADE...";
+            desc.innerText = "Injecting 350ms delay + 15% loss on MILSAT link...";
+        } else if (action === "degrade_losrf") {
+            card.className = "chaos-active-card status-degraded";
+            title.innerText = "📡 INJECTING: RF MULTIPATH JAM...";
+            desc.innerText = "Injecting 150ms delay + 20% loss on LOS-RF link...";
+        }
+    }
+
     try {
         const resp = await fetch("/api/chaos", {
             method: "POST",
@@ -570,12 +807,24 @@ async function triggerChaos(action, target = "") {
         });
         const result = await resp.json();
         console.log("Chaos Action Result:", result);
+        if (result.chaos_state) {
+            updateChaosStatusCard(result.chaos_state);
+        }
         // Force immediate refresh
         pollStatus();
     } catch (err) {
         console.error("Failed to inject chaos:", err);
+    } finally {
+        if (btnEl) {
+            setTimeout(() => {
+                btnEl.classList.remove("btn-loading");
+                btnEl.disabled = false;
+                btnEl.innerHTML = origHtml;
+            }, 500);
+        }
     }
 }
+
 
 // Interactive Modernization Lifecycle Trigger
 let transitionPollTimer = null;
@@ -666,6 +915,7 @@ function updateModernizationUI(modern) {
     if (!modern) return;
 
     const stageBadge = document.getElementById("hud-modern-stage-badge");
+    const headerPostureBadge = document.getElementById("hud-header-posture-badge");
     const gatewayTag = document.getElementById("topo-gateway-tag");
     const transMsg = document.getElementById("modern-transition-msg");
     const completedMsg = document.getElementById("modern-completed-msg");
@@ -674,7 +924,24 @@ function updateModernizationUI(modern) {
     const bannerText = document.getElementById("modern-alert-text");
     const bannerProg = document.getElementById("modern-alert-progress");
 
-    // Update Header Badge
+    // Update Header Posture Badge
+    if (headerPostureBadge) {
+        if (modern.is_in_transition) {
+            headerPostureBadge.innerText = `UPGRADING: STAGE ${modern.target_stage_number || modern.stage_number}/4`;
+            headerPostureBadge.className = "header-posture-badge posture-transition";
+        } else if (modern.stage_number === 4) {
+            headerPostureBadge.innerText = "DAY 2: CLOUD-NATIVE CNF";
+            headerPostureBadge.className = "header-posture-badge posture-cnf";
+        } else if (modern.stage_number === 1) {
+            headerPostureBadge.innerText = "DAY 0: LEGACY VNF";
+            headerPostureBadge.className = "header-posture-badge posture-legacy";
+        } else {
+            headerPostureBadge.innerText = `STAGE ${modern.stage_number}: ${modern.stage_name.toUpperCase()}`;
+            headerPostureBadge.className = "header-posture-badge posture-transition";
+        }
+    }
+
+    // Update Sidebar Panel Stage Tag
     if (stageBadge) {
         stageBadge.innerText = `STAGE ${modern.stage_number}: ${modern.stage_name.toUpperCase()}`;
         if (modern.stage_number === 1) {
@@ -773,7 +1040,7 @@ function updateModernizationUI(modern) {
 
         const st = statuses[String(i)] || (i < curStage ? "SETUP_COMPLETED" : (i === curStage ? "ACTIVE" : "PENDING"));
 
-        card.className = "step-card";
+        card.className = "sidebar-stage-card";
 
         if (modern.is_in_transition && i === targetStage) {
             // Actively setting up stage
@@ -1143,6 +1410,12 @@ window.addEventListener("DOMContentLoaded", () => {
     // Initial draw
     requestAnimationFrame(drawTopology);
     drawThroughputChart();
+
+    // Start strict 2 Hz throughput chart ticker
+    setInterval(tickThroughputChart, 500);
+
+    // Initial Modernization Status Fetch
+    pollModernization();
 
     // Start SSE Telemetry
     startSSE();

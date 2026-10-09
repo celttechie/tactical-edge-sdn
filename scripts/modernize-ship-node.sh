@@ -93,6 +93,9 @@ if [[ "$STEP" == "reset-day0" || "$STEP" == "reset" ]]; then
     remote_ssh "bash -s" << 'EOF'
 sudo systemctl stop k3s 2>/dev/null || true
 sudo systemctl disable k3s 2>/dev/null || true
+sudo ip rule add from 10.200.1.2 table 200 priority 100 2>/dev/null || true
+sudo ip route add 10.200.1.0/24 dev eth-mgmt table 200 2>/dev/null || true
+sudo ip route add default via 10.200.1.10 dev eth-mgmt table 200 2>/dev/null || true
 sudo systemctl enable --now sdwan-controller.service 2>/dev/null || true
 echo " [✓] Default routing table:"
 ip route show default
@@ -151,10 +154,13 @@ echo "  Tactical Edge Modernization: Transitioning ${SHIP_TARGET} to CNF    "
 echo "  Execution Mode: ${STEP^^}                                           "
 echo "======================================================================"
 
-# If running steps that need packages, ensure package is built
+# If running steps that need packages, ensure package is built or available on remote
 if [[ "$STEP" == "full" || "$STEP" == "cutover-cnf" || "$STEP" == "deploy-cnf" ]]; then
     if [ -z "${PACKAGE_PATH}" ] || [ ! -f "${PACKAGE_PATH}" ]; then
-        if [ -f "${REPO_ROOT}/scripts/build-airgap-package.sh" ]; then
+        REMOTE_PKG=$(remote_ssh "ls -t ~/zarf-stage/zarf-package-tactical-sdn-stack-*.tar.zst 2>/dev/null | head -n 1 || echo ''")
+        if [ -n "${REMOTE_PKG}" ]; then
+            echo " -> [Detected] Package already staged on ${SHIP_TARGET}: $(basename "${REMOTE_PKG}")"
+        elif [ -f "${REPO_ROOT}/scripts/build-airgap-package.sh" ]; then
             echo "[-] Zarf package not found. Building airgap package..."
             "${REPO_ROOT}/scripts/build-airgap-package.sh"
             PACKAGE_PATH=$(ls -t "${REPO_ROOT}/build"/zarf-package-tactical-sdn-stack-amd64-*.tar.zst 2>/dev/null | head -n 1)
@@ -287,15 +293,22 @@ PKG_NAME="$1"
 REMOTE_PKG="${HOME}/zarf-stage/${PKG_NAME}"
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
+echo "==> [ATOMIC HOT CUTOVER] Preparing atomic handoff to Cloud-Native CNF..."
+# Ensure out-of-band management isolation rule (table 200) is present
+sudo ip rule add from 10.200.1.2 table 200 priority 100 2>/dev/null || true
+sudo ip route add 10.200.1.0/24 dev eth-mgmt table 200 2>/dev/null || true
+sudo ip route add default via 10.200.1.10 dev eth-mgmt table 200 2>/dev/null || true
+
+# Stop legacy controller daemon so port 8080 is instantly available for the CNF pod.
+# Note: Linux kernel retains existing routing tables and NAT state, so data traffic continues uninterrupted.
+sudo systemctl stop sdwan-controller.service 2>/dev/null || true
+sudo systemctl disable sdwan-controller.service 2>/dev/null || true
+
 echo "==> Deploying ${REMOTE_PKG}..."
 zarf package deploy "${REMOTE_PKG}" --confirm
 
 echo "==> Waiting for Tactical SDN CNF DaemonSet pod readiness..."
-kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn-stack --timeout=60s
-
-echo "==> [ATOMIC HOT CUTOVER] CNF pod is healthy. Atomically retiring legacy routing service..."
-sudo systemctl stop sdwan-controller.service 2>/dev/null || true
-sudo systemctl disable sdwan-controller.service 2>/dev/null || true
+kubectl wait --namespace tactical-sdn --for=condition=ready pod --selector=app.kubernetes.io/name=tactical-sdn --timeout=60s
 
 # Flush stale connection tracking states to instantly transition active sessions to CNF dataplane
 if command -v conntrack >/dev/null 2>&1; then

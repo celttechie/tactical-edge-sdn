@@ -85,9 +85,19 @@ sbom: ## Generate CycloneDX and SPDX SBOMs via Syft
 
 ci: lint test-unit ## Run complete local CI verification pipeline
 
+tunnel-dashboard: ## Start or verify persistent SSH tunnel to shore-gateway dashboard (http://localhost:8080)
+	@./scripts/dashboard-tunnel.sh start
+
+tunnel-status: ## Check status of shore-gateway dashboard SSH tunnel
+	@./scripts/dashboard-tunnel.sh status
+
+tunnel-stop: ## Stop persistent SSH tunnel to shore-gateway dashboard
+	@./scripts/dashboard-tunnel.sh stop
+
 clean: ## Clean build artifacts, pyc caches, and temporary files
 	@echo "==> Cleaning cache and build artifacts..."
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf .pytest_cache .coverage htmlcov
+
 
